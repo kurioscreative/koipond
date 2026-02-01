@@ -1,0 +1,18 @@
+# Built gems
+*.gem
+
+# Bundle directory
+.bundle/
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Source prototypes (kept for reference but not shipped)
+source/
