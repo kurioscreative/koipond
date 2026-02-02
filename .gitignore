@@ -1,9 +1,15 @@
 # Built gems
 *.gem
-
-# Bundle directory
-.bundle/
-vendor/
+/.bundle/
+/.yardoc/
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+/vendor/
+Gemfile.lock
 
 # IDE
 .idea/

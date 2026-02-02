@@ -1,32 +1,45 @@
-Gem::Specification.new do |s|
-  s.name        = 'koipond'
-  s.version     = '0.2.0.prism'
-  s.summary     = 'Throw a stone, watch the pond rewrite itself.'
-  s.description = <<~DESC
+# frozen_string_literal: true
+
+require_relative 'lib/koipond/version'
+
+Gem::Specification.new do |spec|
+  spec.name = 'koipond'
+  spec.version = Koipond::VERSION
+  spec.authors = ['Glenn Ericksen']
+  spec.email = ['glenn.m.ericksen@gmail.com']
+
+  spec.summary = 'Throw a stone, watch the pond rewrite itself.'
+  spec.description = <<~DESC
     Koipond finds the most recently changed Ruby file in your project,
     discovers its relatives through requires and references,
     and asks Claude to reimagine the related code.
 
-    v0.2 adds Prism integration for structural understanding:
-    AST-powered kin discovery, shape diffing, and semantic prompts.
-
     This is not a production tool. This is a toy.
     All the best things are.
   DESC
+  spec.homepage = 'https://kurioscreative.github.io/koipond/'
+  spec.license = 'MIT'
+  spec.required_ruby_version = '>= 3.3'
 
-  s.authors     = ['A Curious Fish']
-  s.license     = 'MIT'
-  s.homepage    = 'https://github.com/koipond/koipond'
+  spec.metadata['homepage_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = 'https://github.com/kurioscreative/koipond'
+  spec.metadata['changelog_uri'] = 'https://github.com/kurioscreative/koipond/blob/main/CHANGELOG.md'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
-  s.files       = ['lib/koipond.rb']
-  s.bindir      = 'bin'
-  s.executables = ['koi']
-
-  s.required_ruby_version = '>= 3.1'
-
-  s.metadata = {
-    'rubygems_mfa_required' => 'true',
-    'inspiration'           => '_why the lucky stiff',
-    'mood'                  => 'poignant',
+  # Specify which files should be added to the gem when it is released.
+  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
+  gemspec = File.basename(__FILE__)
+  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) { |ls|
+    ls.readlines("\x0", chomp: true).reject do |f|
+      (f == gemspec) ||
+        f.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile])
+    end
   }
+  spec.bindir = 'exe'
+  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.require_paths = ['lib']
+
+  spec.add_development_dependency 'rake', '~> 13.0'
+  spec.add_development_dependency 'rubocop', '~> 1.70'
+  spec.add_development_dependency 'rubocop-rake', '~> 0.6'
 end

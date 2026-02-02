@@ -1,0 +1,101 @@
+plugins:
+  - rubocop-rake
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'source/**/*'
+    - 'examples/**/*'
+
+# Main library intentionally uses unfrozen strings
+Style/FrozenStringLiteralComment:
+  Exclude:
+    - 'lib/koipond.rb'
+
+# Some constants are intentionally mutable in the pedagogical codebase
+Style/MutableConstant:
+  Exclude:
+    - 'lib/koipond.rb'
+
+# This codebase intentionally uses pedagogical style
+Style/Documentation:
+  Enabled: false
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+# Allow endless methods (def foo = expr)
+Style/EndlessMethod:
+  Enabled: false
+
+# Allow single-line blocks with do/end
+Style/BlockDelimiters:
+  EnforcedStyle: semantic
+
+# Refinements are intentional
+Lint/RefinementImportMethods:
+  Enabled: false
+
+# method_missing is intentional
+Style/MissingRespondToMissing:
+  Enabled: false
+
+# Allow poetic variable names
+Naming/MethodParameterName:
+  AllowedNames:
+    - r
+    - k
+    - s
+    - n
+    - p
+    - c
+    - i
+
+# Keep dev deps in gemspec for this project
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Metrics/BlockNesting:
+  Enabled: false
+
+# Safe navigation chains are intentional for pipeline style
+Style/SafeNavigationChainLength:
+  Enabled: false
+
+# Shape struct intentionally defines :methods
+Lint/StructNewOverride:
+  Enabled: false
+
+# Private constants used intentionally
+Lint/UselessConstantScoping:
+  Enabled: false

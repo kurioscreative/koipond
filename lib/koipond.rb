@@ -29,10 +29,9 @@
 require 'pathname'
 require 'open3'
 require 'json'
-require 'set'
+require_relative 'koipond/version'
 
-# We conditionally require Prism — it ships with Ruby >= 3.3,
-# or can be installed as a gem for 3.1+.
+# We conditionally require Prism — it ships natively with Ruby >= 3.3.
 # If unavailable, we fall back to RubyVM::AbstractSyntaxTree.
 PRISM_AVAILABLE = begin
   require 'prism'
@@ -42,8 +41,6 @@ rescue LoadError
 end
 
 module Koipond
-  VERSION = "0.2.0.prism"
-
   # ╔═══════════════════════════════════════════════════════╗
   # ║  Refinements                                         ║
   # ║                                                      ║
@@ -113,8 +110,9 @@ module Koipond
     using StringSwims   # refinements only live where you invite them
 
     include Comparable  # include one module, gain a universe:
-                        #   <, <=, ==, >=, >, between?, clamp
-                        # All from defining a single method: <=>
+
+    #   <, <=, ==, >=, >, between?, clamp
+    # All from defining a single method: <=>
 
     def initialize(path:, pond: nil)
       super(path: Pathname.new(path).expand_path, pond: pond)
@@ -126,6 +124,7 @@ module Koipond
     # The freshest wound floats to the top.
     def <=>(other)
       return nil unless other.is_a?(Stone)
+
       path.heartbeat <=> other.path.heartbeat
     end
 
@@ -136,7 +135,7 @@ module Koipond
     def essence
       @essence ||= path.read
     rescue Errno::ENOENT
-      ""
+      ''
     end
 
     # ── Acquaintances ──────────────────────────────────
@@ -151,6 +150,7 @@ module Koipond
     # No temp variables. No mutation. Just flow.
     def acquaintances
       return [] unless pond
+
       essence
         .scan(/require(?:_relative)?\s+['"]([^'"]+)['"]/)
         .flatten
@@ -163,6 +163,7 @@ module Koipond
     # whether they know it or not.
     def mentioned_by
       return [] unless pond
+
       name_stem = path.basename('.rb').to_s
       pond.stones.select { |s|
         s.path != path && s.essence.include?(name_stem)
@@ -206,6 +207,7 @@ module Koipond
           next_frontier = []
           frontier.each do |k|
             next if seen.include?(k.path.to_s)
+
             seen.add(k.path.to_s)
             yielder << k
             next_frontier.concat(k.kin)
@@ -213,7 +215,7 @@ module Koipond
           frontier = next_frontier
           break if frontier.empty?
         end
-      end.lazy  # the .lazy is the magic word
+      end.lazy # the .lazy is the magic word
     end
 
     # ── Throw ──────────────────────────────────────────
@@ -275,8 +277,8 @@ module Koipond
     def self.here = new(Dir.pwd)
 
     # ── Enumerable's one requirement ───────────────────
-    def each(&block)
-      stones.each(&block)
+    def each(&)
+      stones.each(&)
     end
 
     # Because Enumerable gives us `max`, and Stone
@@ -302,12 +304,13 @@ module Koipond
     #
     # Three words that read like English.
     # That's not an accident. That's Ruby.
-    def method_missing(name, *args, &block)
+    def method_missing(name, *args, &)
       found = stones.find { |s|
         s.path.basename('.rb').to_s == name.to_s
       }
       return found if found
-      super   # if we can't handle it, let Ruby's normal error kick in
+
+      super # if we can't handle it, let Ruby's normal error kick in
     end
 
     # Always pair method_missing with respond_to_missing?
@@ -327,7 +330,7 @@ module Koipond
       candidates = [
         relative_to.dirname.join("#{req}.rb"),
         relative_to.dirname.join(req.to_s),
-        root.join("lib", "#{req}.rb"),
+        root.join('lib', "#{req}.rb"),
         root.join("#{req}.rb"),
       ]
       found = candidates.find(&:exist?)
@@ -338,10 +341,11 @@ module Koipond
     # Delegate to the most recently touched file.
     # Delegation in Ruby is just a method call.
     # No patterns. No proxies. Just trust.
-    def throw!(style: :gentle, &block)
+    def throw!(style: :gentle, &)
       stone = last_touched
-      return puts("🌊 The pond is empty. No stones to throw.") unless stone
-      stone.throw!(style: style, &block)
+      return puts('🌊 The pond is empty. No stones to throw.') unless stone
+
+      stone.throw!(style: style, &)
     end
 
     # ── Summary ────────────────────────────────────────
@@ -356,12 +360,10 @@ module Koipond
     end
 
     def stones
-      @stones ||= begin
-        Pathname.glob(root.join('**/*.rb'))
-          .reject { |p| p.to_s =~ /vendor|node_modules|\.bundle|\.git/ }
-          .map { |p| Stone.new(path: p, pond: self) }
-          .sort    # Comparable does the rest
-      end
+      @stones ||= Pathname.glob(root.join('**/*.rb'))
+                          .reject { |p| p.to_s =~ /vendor|node_modules|\.bundle|\.git/ }
+                          .map { |p| Stone.new(path: p, pond: self) }
+                          .sort # Comparable does the rest
     end
 
     def to_s = "🌊 Pond(#{root.basename}, #{stones.size} stones)"
@@ -392,68 +394,71 @@ module Koipond
     # Choose lambdas when you want discipline.
     # Choose procs when you want freedom.
     STYLES = {
-      gentle: ->(stone, kin_text) { <<~PROMPT
-        I just changed #{stone.path.basename}. Here is its current content:
+      gentle: lambda { |stone, kin_text|
+        <<~PROMPT
+          I just changed #{stone.path.basename}. Here is its current content:
 
-        ```ruby
-        #{stone.essence}
-        ```
+          ```ruby
+          #{stone.essence}
+          ```
 
-        #{kin_text}
+          #{kin_text}
 
-        Gently improve the related files to harmonize with my changes.
-        Keep the spirit. Refine the letter.
-        Preserve method signatures and public interfaces.
-        Return each file as:
-        === FILEPATH ===
-        (file content)
-      PROMPT
+          Gently improve the related files to harmonize with my changes.
+          Keep the spirit. Refine the letter.
+          Preserve method signatures and public interfaces.
+          Return each file as:
+          === FILEPATH ===
+          (file content)
+        PROMPT
       },
 
-      radical: ->(stone, kin_text) { <<~PROMPT
-        #{stone.path.basename} has changed. It now reads:
+      radical: lambda { |stone, kin_text|
+        <<~PROMPT
+          #{stone.path.basename} has changed. It now reads:
 
-        ```ruby
-        #{stone.essence}
-        ```
+          ```ruby
+          #{stone.essence}
+          ```
 
-        #{kin_text}
+          #{kin_text}
 
-        Radically reimagine the related files.
-        Make them sing in the same key as the changed file,
-        but find harmonies nobody expected.
-        Rethink the architecture if it serves clarity.
-        Return each file as:
-        === FILEPATH ===
-        (file content)
-      PROMPT
+          Radically reimagine the related files.
+          Make them sing in the same key as the changed file,
+          but find harmonies nobody expected.
+          Rethink the architecture if it serves clarity.
+          Return each file as:
+          === FILEPATH ===
+          (file content)
+        PROMPT
       },
 
       # The poignant style. For when you want Claude
       # to channel something deeper.
-      poignant: ->(stone, kin_text) { <<~PROMPT
-        A file has changed. As _why once said,
-        "when you don't create things, you become defined
-        by your tastes rather than ability."
+      poignant: lambda { |stone, kin_text|
+        <<~PROMPT
+          A file has changed. As _why once said,
+          "when you don't create things, you become defined
+          by your tastes rather than ability."
 
-        The changed file (#{stone.path.basename}):
-        ```ruby
-        #{stone.essence}
-        ```
+          The changed file (#{stone.path.basename}):
+          ```ruby
+          #{stone.essence}
+          ```
 
-        #{kin_text}
+          #{kin_text}
 
-        Rewrite the related files with the curiosity of a fox
-        and the precision of a cartoonist. Make the code more Ruby.
-        More alive. More itself. Favor elegance over cleverness.
-        Favor clarity over brevity. Favor joy over everything.
-        Return each file as:
-        === FILEPATH ===
-        (file content)
-      PROMPT
-      }
-    }.freeze   # .freeze makes the hash immutable.
-               # The past is frozen. Only the future is mutable.
+          Rewrite the related files with the curiosity of a fox
+          and the precision of a cartoonist. Make the code more Ruby.
+          More alive. More itself. Favor elegance over cleverness.
+          Favor clarity over brevity. Favor joy over everything.
+          Return each file as:
+          === FILEPATH ===
+          (file content)
+        PROMPT
+      },
+    }.freeze # .freeze makes the hash immutable.
+    # The past is frozen. Only the future is mutable.
 
     attr_accessor :stone, :style, :pond
 
@@ -465,9 +470,7 @@ module Koipond
 
     def propagate!
       kin = stone.kin
-      if kin.empty?
-        return Reflection.empty("#{stone} has no kin. It ripples alone.")
-      end
+      return Reflection.empty("#{stone} has no kin. It ripples alone.") if kin.empty?
 
       # If Prism is available, use structured prompts
       if defined?(Koipond::Parser) && defined?(Koipond::PrismPrompts)
@@ -480,15 +483,15 @@ module Koipond
         }.join("\n\n")
 
         prompt = STYLES
-          .fetch(style) { STYLES[:gentle] }   # fetch with default block
-          .call(stone, kin_text)               # call the lambda
+                 .fetch(style) { STYLES[:gentle] } # fetch with default block
+                 .call(stone, kin_text) # call the lambda
       end
 
       response = ask_claude(prompt)
 
       Reflection.new(
-        stone:    stone,
-        kin:      kin,
+        stone: stone,
+        kin: kin,
         response: response,
         rewrites: parse_rewrites(response)
       )
@@ -499,6 +502,7 @@ module Koipond
     # ── Compute shape diff for Prism-powered prompts ───
     def compute_shape_diff
       return nil unless defined?(Koipond::Parser)
+
       # For now, return nil (no "before" shape available)
       # A full implementation would cache shapes and diff against prior version
       nil
@@ -510,7 +514,7 @@ module Koipond
     # Three values, returned as three variables.
     # Multiple return values without tuples or wrappers.
     # Ruby just lets you.
-    CLAUDE_SYSTEM_PROMPT = <<~SYSTEM.freeze
+    CLAUDE_SYSTEM_PROMPT = <<~SYSTEM
       You rewrite Ruby files. Output ONLY in this format:
 
       === path/to/file.rb ===
@@ -533,9 +537,7 @@ module Koipond
         '--output-format', 'text'
       )
 
-      unless status.success?
-        raise ClaudeUnreachable, "Claude couldn't hear us: #{stderr}"
-      end
+      raise ClaudeUnreachable, "Claude couldn't hear us: #{stderr}" unless status.success?
 
       stdout
     end
@@ -561,11 +563,12 @@ module Koipond
         .filter_map { |filepath, content|
           next unless filepath && content
           next if filepath.strip.upcase == 'NO CHANGES'
+
           clean = content
-            .sub(/\A\s*```\w*\n/, '')    # opening markdown fence
-            .sub(/\n```\s*\z/, '')        # closing markdown fence
-            .sub(/\n---\n.*/m, '')        # trailing explanation after ---
-            .strip
+                  .sub(/\A\s*```\w*\n/, '') # opening markdown fence
+                  .sub(/\n```\s*\z/, '')        # closing markdown fence
+                  .sub(/\n---\n.*/m, '')        # trailing explanation after ---
+                  .strip
           [filepath.strip, clean]
         }
         .to_h
@@ -613,7 +616,7 @@ module Koipond
         puts lines.first(25).join
         puts "  ... (#{lines.size} total lines)" if lines.size > 25
       end
-      self   # return self for chaining
+      self # return self for chaining
     end
 
     # Apply the rewrites. Let the ripples land.
@@ -644,7 +647,7 @@ module Koipond
     def to_s
       if empty?
         if response.to_s.strip.empty? || response.include?('NO CHANGES')
-          "🔮 the pond is still. no changes needed."
+          '🔮 the pond is still. no changes needed.'
         else
           "🔮 #{response}"
         end
@@ -673,21 +676,22 @@ module Koipond
   module Narrate
     TALES = {
       'last_touched' => 'the pond remembers who moved last',
-      'kin'          => 'searching for family in the water',
-      'deep_kin'     => 'following the current deeper...',
-      'throw!'       => 'a stone arcs through the air',
-      'propagate!'   => 'ripples spreading outward',
-      'ask_claude'   => 'whispering to Claude across the wire',
-      'apply!'       => 'the future takes shape',
-      'preview'      => 'peering into what might be',
-      'acquaintances'=> 'reading the address book',
+      'kin' => 'searching for family in the water',
+      'deep_kin' => 'following the current deeper...',
+      'throw!' => 'a stone arcs through the air',
+      'propagate!' => 'ripples spreading outward',
+      'ask_claude' => 'whispering to Claude across the wire',
+      'apply!' => 'the future takes shape',
+      'preview' => 'peering into what might be',
+      'acquaintances' => 'reading the address book',
       'mentioned_by' => 'who speaks this name?',
-      'essence'      => 'reading the stone\'s inscription',
+      'essence' => 'reading the stone\'s inscription',
     }.freeze
 
     def self.on!
       @trace = TracePoint.new(:call) do |tp|
         next unless tp.defined_class.to_s.include?('Koipond')
+
         tale = TALES[tp.method_id.to_s]
         # Named methods get narrated. Others appear randomly.
         # Randomness is _why's favorite spice.
@@ -698,12 +702,12 @@ module Koipond
         end
       end
       @trace.enable
-      puts "  🐟 Narration enabled. Watch the fish."
+      puts '  🐟 Narration enabled. Watch the fish.'
     end
 
     def self.off!
       @trace&.disable
-      puts "  🐟 The pond falls silent."
+      puts '  🐟 The pond falls silent.'
     end
   end
 
@@ -728,8 +732,8 @@ module Koipond
     end
 
     # The whole gem in one method call.
-    def ripple!(root: Dir.pwd, style: :gentle, &block)
-      pond(root).throw!(style: style, &block)
+    def ripple!(root: Dir.pwd, style: :gentle, &)
+      pond(root).throw!(style: style, &)
     end
 
     def narrate!  = Narrate.on!
@@ -785,19 +789,19 @@ module Koipond
   #   Struct = a living thing that can change
   #   Data   = a memory of a thing, preserved exactly
 
-  Requirement = Data.define(:type, :path, :location) do
+  Requirement = Data.define(:type, :path, :location) {
     def to_s = "#{type} '#{path}'"
-  end
+  }
 
-  Inclusion = Data.define(:type, :name, :location) do
+  Inclusion = Data.define(:type, :name, :location) {
     def to_s = "#{type} #{name}"
-  end
+  }
 
-  Attribute = Data.define(:kind, :name, :location) do
+  Attribute = Data.define(:kind, :name, :location) {
     def to_s = "#{kind} :#{name}"
-  end
+  }
 
-  Params = Data.define(:required, :optional, :rest, :keywords, :keyword_rest, :block) do
+  Params = Data.define(:required, :optional, :rest, :keywords, :keyword_rest, :block) {
     def self.empty
       new(required: [], optional: [], rest: nil, keywords: [], keyword_rest: nil, block: nil)
     end
@@ -818,27 +822,27 @@ module Koipond
     end
 
     def to_s = signature
-  end
+  }
 
-  Method = Data.define(:name, :visibility, :params, :location, :class_name, :class_method) do
+  Method = Data.define(:name, :visibility, :params, :location, :class_name, :class_method) {
     def public?    = visibility == :public
     def private?   = visibility == :private
     def protected? = visibility == :protected
 
     def signature
-      prefix = class_method ? "self." : ""
+      prefix = class_method ? 'self.' : ''
       "#{visibility} #{prefix}#{name}#{params}"
     end
 
     def to_s = signature
-  end
+  }
 
-  Comment = Data.define(:text, :line, :yard) do
+  Comment = Data.define(:text, :line, :yard) {
     def yard? = yard
     def to_s = text
-  end
+  }
 
-  MethodChange = Data.define(:name, :before, :after) do
+  MethodChange = Data.define(:name, :before, :after) {
     def signature_changed?
       before.params.signature != after.params.signature
     end
@@ -853,7 +857,7 @@ module Koipond
       parts << "visibility: #{before.visibility} -> #{after.visibility}" if visibility_changed?
       "#{name}: #{parts.join(', ')}"
     end
-  end
+  }
 
   # ── The Shape itself ─────────────────────────────────
   # A Struct, not a Data, because shapes are assembled
@@ -864,19 +868,19 @@ module Koipond
     :requires, :includes, :attrs, :methods,
     :classes, :modules, :superclasses,
     :constant_refs, :comments,
-    keyword_init: true,
+    keyword_init: true
   ) do
     def initialize(**)
       super(
-        requires:      [],
-        includes:      [],
-        attrs:         [],
-        methods:       [],
-        classes:       [],
-        modules:       [],
-        superclasses:  {},
+        requires: [],
+        includes: [],
+        attrs: [],
+        methods: [],
+        classes: [],
+        modules: [],
+        superclasses: {},
         constant_refs: [],
-        comments:      [],
+        comments: [],
         **
       )
     end
@@ -895,8 +899,8 @@ module Koipond
     # This is what kin files care about.
     def public_interface
       public_methods = methods.select(&:public?)
-      readable_attrs = attrs.select { |a| [:attr_reader, :attr_accessor].include?(a.kind) }
-      writable_attrs = attrs.select { |a| [:attr_writer, :attr_accessor].include?(a.kind) }
+      readable_attrs = attrs.select { |a| %i[attr_reader attr_accessor].include?(a.kind) }
+      writable_attrs = attrs.select { |a| %i[attr_writer attr_accessor].include?(a.kind) }
       {
         methods: public_methods,
         readable: readable_attrs.map(&:name),
@@ -911,11 +915,15 @@ module Koipond
       lines = []
       lines << "Classes: #{classes.join(', ')}" unless classes.empty?
       lines << "Modules: #{modules.join(', ')}" unless modules.empty?
-      superclasses.each { |c, s| lines << "  #{c} < #{s}" }
+      superclasses.each do |c, s|
+        lines << "  #{c} < #{s}"
+      end
       lines << "Includes: #{includes.map(&:to_s).join(', ')}" unless includes.empty?
       lines << "Attributes: #{attrs.map(&:to_s).join(', ')}" unless attrs.empty?
-      lines << "Methods:" unless methods.empty?
-      methods.each { |m| lines << "  #{m.signature}" }
+      lines << 'Methods:' unless methods.empty?
+      methods.each do |m|
+        lines << "  #{m.signature}"
+      end
       lines << "References: #{external_constants.to_a.join(', ')}" unless external_constants.empty?
       lines.join("\n")
     end
@@ -976,6 +984,7 @@ module Koipond
         bm = before.methods.find { |m| m.name == name }
         am = after.methods.find  { |m| m.name == name }
         next if bm.params.signature == am.params.signature && bm.visibility == am.visibility
+
         MethodChange.new(name: name, before: bm, after: am)
       }
     end
@@ -1028,42 +1037,60 @@ module Koipond
       counts.sum
     end
 
-    def trivial?    = magnitude == 0
+    def trivial?    = magnitude.zero?
     def minor?      = magnitude.between?(1, 3)
     def significant? = magnitude.between?(4, 8)
-    def major?      = magnitude > 8
+    def major? = magnitude > 8
 
     # ── Describe for Claude ────────────────────────────
     # A structured, semantic description of what changed.
     # This replaces "here's the whole file, figure it out."
     #
     def describe
-      return "(no structural changes)" if trivial?
+      return '(no structural changes)' if trivial?
 
-      lines = []
-      methods_added.each   { |m| lines << "+ Added: #{m.signature}" }
-      methods_removed.each { |m| lines << "- Removed: #{m.signature}" }
+      lines = methods_added.map { |m|
+        "+ Added: #{m.signature}"
+      }
+      methods_removed.each do |m|
+        lines << "- Removed: #{m.signature}"
+      end
       methods_changed.each do |mc|
         lines << "~ Changed: #{mc.name}"
         lines << "    was: #{mc.before.signature}"
         lines << "    now: #{mc.after.signature}"
       end
-      attrs_added.each   { |a| lines << "+ Added: #{a}" }
-      attrs_removed.each { |a| lines << "- Removed: #{a}" }
-      includes_added.each   { |i| lines << "+ Now includes: #{i.name}" }
-      includes_removed.each { |i| lines << "- No longer includes: #{i.name}" }
-      constants_added.each   { |c| lines << "+ Now references: #{c}" }
-      constants_removed.each { |c| lines << "- No longer references: #{c}" }
+      attrs_added.each do |a|
+        lines << "+ Added: #{a}"
+      end
+      attrs_removed.each do |a|
+        lines << "- Removed: #{a}"
+      end
+      includes_added.each do |i|
+        lines << "+ Now includes: #{i.name}"
+      end
+      includes_removed.each do |i|
+        lines << "- No longer includes: #{i.name}"
+      end
+      constants_added.each do |c|
+        lines << "+ Now references: #{c}"
+      end
+      constants_removed.each do |c|
+        lines << "- No longer references: #{c}"
+      end
       lines << "\nMagnitude: #{magnitude} (#{severity})"
       lines.join("\n")
     end
 
     def severity
-      case
-      when trivial?     then "no change"
-      when minor?       then "cosmetic"
-      when significant? then "structural"
-      when major?       then "architectural"
+      if trivial?
+        'no change'
+      elsif minor?
+        'cosmetic'
+      elsif significant?
+        'structural'
+      elsif major?
+        'architectural'
       end
     end
   end
@@ -1083,7 +1110,7 @@ module Koipond
 
       def initialize
         @shape = Shape.new
-        @visibility_stack = [:public]  # stack because classes nest
+        @visibility_stack = [:public] # stack because classes nest
         @current_class = nil
         super
       end
@@ -1096,7 +1123,7 @@ module Koipond
             @shape.requires << Requirement.new(
               type: node.name,
               path: node.arguments.arguments.first.unescaped,
-              location: node.location,
+              location: node.location
             )
           end
 
@@ -1104,28 +1131,28 @@ module Koipond
           if node.arguments&.arguments&.first
             arg = node.arguments.arguments.first
             name = extract_constant_path(arg)
-            @shape.includes << Inclusion.new(
-              type: node.name,
-              name: name,
-              location: node.location,
-            ) if name
-          end
-
-        when :attr_reader, :attr_accessor, :attr_writer
-          node.arguments&.arguments&.each do |arg|
-            if arg.is_a?(Prism::SymbolNode)
-              @shape.attrs << Attribute.new(
-                kind: node.name,
-                name: arg.unescaped.to_sym,
-                location: node.location,
+            if name
+              @shape.includes << Inclusion.new(
+                type: node.name,
+                name: name,
+                location: node.location
               )
             end
           end
 
-        when :private, :protected, :public
-          if node.arguments.nil?
-            @visibility_stack[-1] = node.name
+        when :attr_reader, :attr_accessor, :attr_writer
+          node.arguments&.arguments&.each do |arg|
+            next unless arg.is_a?(Prism::SymbolNode)
+
+            @shape.attrs << Attribute.new(
+              kind: node.name,
+              name: arg.unescaped.to_sym,
+              location: node.location
+            )
           end
+
+        when :private, :protected, :public
+          @visibility_stack[-1] = node.name if node.arguments.nil?
         end
 
         super
@@ -1134,12 +1161,12 @@ module Koipond
       # ── Method definitions ────────────────────────────
       def visit_def_node(node)
         @shape.methods << Method.new(
-          name:       node.name,
+          name: node.name,
           visibility: @visibility_stack.last,
-          params:     extract_params(node),
-          location:   node.location,
+          params: extract_params(node),
+          location: node.location,
           class_name: @current_class,
-          class_method: false,
+          class_method: false
         )
         super
       end
@@ -1198,8 +1225,6 @@ module Koipond
           parent = node.parent ? extract_constant_path(node.parent) : nil
           child  = node.name.to_s
           parent ? "#{parent}::#{child}" : child
-        else
-          nil
         end
       end
 
@@ -1208,17 +1233,17 @@ module Koipond
 
         p = node.parameters
         Params.new(
-          required:    p.requireds.map { |r| r.respond_to?(:name) ? r.name : r.to_s },
-          optional:    p.optionals.map(&:name),
-          rest:        p.rest&.name,
-          keywords:    p.keywords.map(&:name),
-          keyword_rest: p.keyword_rest&.respond_to?(:name) ? p.keyword_rest.name : nil,
-          block:       p.block&.name,
+          required: p.requireds.map { |r| r.respond_to?(:name) ? r.name : r.to_s },
+          optional: p.optionals.map(&:name),
+          rest: p.rest&.name,
+          keywords: p.keywords.map(&:name),
+          keyword_rest: p.keyword_rest.respond_to?(:name) ? p.keyword_rest.name : nil,
+          block: p.block&.name
         )
       end
     end
 
-  end  # if PRISM_AVAILABLE
+  end
 
   # ════════════════════════════════════════════════════════════════
   #
@@ -1231,7 +1256,7 @@ module Koipond
   module Parser
     module_function
 
-    def parse_shape(source, path: "(unknown)")
+    def parse_shape(source, path: '(unknown)')
       if PRISM_AVAILABLE
         parse_with_prism(source, path: path)
       else
@@ -1239,12 +1264,12 @@ module Koipond
       end
     end
 
-    def parse_with_prism(source, path: "(unknown)")
+    def parse_with_prism(source, path: '(unknown)')
       result = Prism.parse(source)
 
       unless result.success?
         result.errors.each do |err|
-          $stderr.puts "  [prism] #{path}:#{err.location.start_line}: #{err.message}"
+          warn "  [prism] #{path}:#{err.location.start_line}: #{err.message}"
         end
       end
 
@@ -1256,7 +1281,7 @@ module Koipond
         visitor.shape.comments << Comment.new(
           text: text,
           line: comment.location.start_line,
-          yard: text.start_with?('@'),
+          yard: text.start_with?('@')
         )
       end
 
@@ -1264,31 +1289,29 @@ module Koipond
       visitor.shape
     end
 
-    def parse_with_old_ast(source, path: "(unknown)")
+    def parse_with_old_ast(source, path: '(unknown)')
       shape = Shape.new
       begin
         ast = RubyVM::AbstractSyntaxTree.parse(source)
       rescue SyntaxError => e
-        $stderr.puts "  [ast] #{path}: #{e.message}"
+        warn "  [ast] #{path}: #{e.message}"
         return shape.solidify!
       end
 
       private_line = nil
       walk_old_ast(ast) do |n|
-        if n.type == :VCALL && n.children[0] == :private
-          private_line = n.first_lineno
-        end
+        private_line = n.first_lineno if n.type == :VCALL && n.children[0] == :private
 
         case n.type
         when :DEFN
-          vis = (private_line && n.first_lineno > private_line) ? :private : :public
+          vis = private_line && n.first_lineno > private_line ? :private : :public
           shape.methods << Method.new(
-            name:         n.children[0],
-            visibility:   vis,
-            params:       Params.empty,
-            location:     nil,
-            class_name:   nil,
-            class_method: false,
+            name: n.children[0],
+            visibility: vis,
+            params: Params.empty,
+            location: nil,
+            class_name: nil,
+            class_method: false
           )
         when :CONST
           shape.constant_refs << n.children[0].to_s
@@ -1299,32 +1322,26 @@ module Koipond
           when :require, :require_relative
             if args&.type == :LIST && args.children[0]&.type == :STR
               shape.requires << Requirement.new(
-                type: method_name, path: args.children[0].children[0], location: nil,
+                type: method_name, path: args.children[0].children[0], location: nil
               )
             end
           when :include, :extend
             if args&.type == :LIST && args.children[0]&.type == :CONST
               shape.includes << Inclusion.new(
-                type: method_name, name: args.children[0].children[0].to_s, location: nil,
+                type: method_name, name: args.children[0].children[0].to_s, location: nil
               )
             end
           when :attr_reader, :attr_accessor, :attr_writer
             if args&.type == :LIST
               args.children.compact.each do |c|
-                if c.type == :LIT
-                  shape.attrs << Attribute.new(kind: method_name, name: c.children[0], location: nil)
-                end
+                shape.attrs << Attribute.new(kind: method_name, name: c.children[0], location: nil) if c.type == :LIT
               end
             end
           end
         when :CLASS
-          if n.children[0]&.type == :COLON2
-            shape.classes << n.children[0].children.last.to_s
-          end
+          shape.classes << n.children[0].children.last.to_s if n.children[0]&.type == :COLON2
         when :MODULE
-          if n.children[0]&.type == :COLON2
-            shape.modules << n.children[0].children.last.to_s
-          end
+          shape.modules << n.children[0].children.last.to_s if n.children[0]&.type == :COLON2
         end
       end
 
@@ -1334,6 +1351,7 @@ module Koipond
 
     def walk_old_ast(node, &block)
       return unless node.is_a?(RubyVM::AbstractSyntaxTree::Node)
+
       block.call(node)
       node.children.each { |c| walk_old_ast(c, &block) }
     end
@@ -1351,7 +1369,7 @@ module Koipond
     module_function
 
     def build(stone:, kin:, diff:, style: :gentle)
-      diff_text = diff ? diff.describe : "(first analysis, no prior shape)"
+      diff_text = diff ? diff.describe : '(first analysis, no prior shape)'
 
       kin_text = kin.map { |k|
         shape = Parser.parse_shape(k.essence, path: k.path.to_s)
@@ -1468,20 +1486,17 @@ module Koipond
 
       pond_stones.each do |other|
         next if other.path == stone.path
+
         other_shape = Parser.parse_shape(other.essence, path: other.path.to_s)
 
         reasons = []
 
         # 1. Direct require
         other_shape.requires.each do |req|
-          if req.path.include?(stone.path.basename('.rb').to_s)
-            reasons << "requires #{req.path}"
-          end
+          reasons << "requires #{req.path}" if req.path.include?(stone.path.basename('.rb').to_s)
         end
         my_shape.requires.each do |req|
-          if req.path.include?(other.path.basename('.rb').to_s)
-            reasons << "required by #{stone.path.basename}"
-          end
+          reasons << "required by #{stone.path.basename}" if req.path.include?(other.path.basename('.rb').to_s)
         end
 
         # 2. Constant references
@@ -1490,32 +1505,32 @@ module Koipond
         other_defines = Set.new(other_shape.classes + other_shape.modules)
 
         shared_outward = my_classes & other_consts
-        shared_outward.each { |c| reasons << "#{other.path.basename} references #{c}" }
+        shared_outward.each do |c|
+          reasons << "#{other.path.basename} references #{c}"
+        end
 
         shared_inward = other_defines & my_consts
-        shared_inward.each { |c| reasons << "#{stone.path.basename} references #{c}" }
+        shared_inward.each do |c|
+          reasons << "#{stone.path.basename} references #{c}"
+        end
 
         # 3. Shared includes
         my_includes    = Set.new(my_shape.includes.map(&:name))
         other_includes = Set.new(other_shape.includes.map(&:name))
         shared = my_includes & other_includes
-        shared.each { |i| reasons << "both include #{i}" }
+        shared.each do |i|
+          reasons << "both include #{i}"
+        end
 
         # 4. Superclass relationships
         other_shape.superclasses.each do |cls, superclass|
-          if my_classes.include?(superclass)
-            reasons << "#{cls} inherits from #{superclass}"
-          end
+          reasons << "#{cls} inherits from #{superclass}" if my_classes.include?(superclass)
         end
         my_shape.superclasses.each do |cls, superclass|
-          if other_defines.include?(superclass)
-            reasons << "#{cls} inherits from #{superclass}"
-          end
+          reasons << "#{cls} inherits from #{superclass}" if other_defines.include?(superclass)
         end
 
-        unless reasons.empty?
-          kin[other] = reasons
-        end
+        kin[other] = reasons unless reasons.empty?
       end
 
       kin
@@ -1564,7 +1579,7 @@ module Koipond
   # ════════════════════════════════════════════════════════════════
 
   def self.cli!(argv = ARGV)
-    # Note: StringSwims refinements can't be used here (Module#using not permitted in methods)
+    # NOTE: StringSwims refinements can't be used here (Module#using not permitted in methods)
     # The CLI works through the Koipond module API directly
 
     # ── Early exit for swim mode ─────────────────────────
@@ -1582,9 +1597,9 @@ module Koipond
 
     trace = argv.include?('--trace')
     root  = argv
-      .reject { |a| a.start_with?('--') }
-      .first
-      .then { |r| r || Dir.pwd }
+            .reject { |a| a.start_with?('--') }
+            .first
+            .then { |r| r || Dir.pwd }
 
     narrate! if trace
 
@@ -1597,20 +1612,20 @@ module Koipond
 
     puts
 
-    if stone
-      reflection = stone.throw!(style: style)
-      puts reflection
-      reflection.preview
+    return unless stone
 
-      if reflection.reach > 0
-        print "\nApply these changes? (y/n) "
-        if $stdin.gets&.chomp&.downcase == 'y'
-          reflection.apply!
-          puts "\n  🐟 The pond settles. For now."
-        else
-          puts "\n  🐟 The stone skipped. Nothing changed."
-        end
-      end
+    reflection = stone.throw!(style: style)
+    puts reflection
+    reflection.preview
+
+    return unless reflection.reach.positive?
+
+    print "\nApply these changes? (y/n) "
+    if $stdin.gets&.chomp&.downcase == 'y'
+      reflection.apply!
+      puts "\n  🐟 The pond settles. For now."
+    else
+      puts "\n  🐟 The stone skipped. Nothing changed."
     end
   end
 
@@ -1630,16 +1645,16 @@ module Koipond
     # Welcome scene
     puts <<~WELCOME
 
-    ∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿
-       you are standing at the edge
-       of a small pond. #{pond.count} stones
-       rest beneath the surface.
+      ∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿
+         you are standing at the edge
+         of a small pond. #{pond.count} stones
+         rest beneath the surface.
     WELCOME
 
     stone = pond.last_touched
     if stone
       ago = time_ago(stone.path.mtime)
-      puts "       the water remembers:"
+      puts '       the water remembers:'
       puts "         #{stone.path.basename} touched the shore"
       puts "         #{ago}."
     end
@@ -1652,7 +1667,7 @@ module Koipond
     # REPL loop
     style = :gentle
     loop do
-      print "  🐟 "
+      print '  🐟 '
       input = $stdin.gets&.chomp&.strip&.downcase
       break if input.nil?
 
@@ -1685,25 +1700,26 @@ module Koipond
 
   def self.time_ago(time)
     seconds = (Time.now - time).to_i
-    return "just now" if seconds < 0  # future mtime (clock skew)
+    return 'just now' if seconds.negative? # future mtime (clock skew)
+
     case seconds
     when 0..59 then "#{seconds} seconds ago"
     when 60..3599 then "#{seconds / 60} minutes ago"
-    when 3600..86399 then "#{seconds / 3600} hours ago"
-    else "#{seconds / 86400} days ago"
+    when 3600..86_399 then "#{seconds / 3600} hours ago"
+    else "#{seconds / 86_400} days ago"
     end
   end
 
   def self.show_swim_help
     puts <<~HELP
-    what would you like to do?
+      what would you like to do?
 
-    > throw        (watch the ripples)
-    > look         (peer into the water)
-    > kin          (who swims together?)
-    > style        (gentle, radical, poignant)
-    > trace        (toggle narration)
-    > leave        (the pond stays still)
+      > throw        (watch the ripples)
+      > look         (peer into the water)
+      > kin          (who swims together?)
+      > style        (gentle, radical, poignant)
+      > trace        (toggle narration)
+      > leave        (the pond stays still)
 
     HELP
   end
@@ -1719,7 +1735,7 @@ module Koipond
     reflection = stone.throw!(style: style)
     puts "  #{reflection}\n"
 
-    if reflection.reach > 0
+    if reflection.reach.positive?
       reflection.preview
       print "\n  apply these changes? (y/n) "
       if $stdin.gets&.chomp&.downcase == 'y'
@@ -1746,10 +1762,10 @@ module Koipond
   def self.handle_kin(pond, input)
     parts = input.split
     stone = if parts[1]
-      pond.stones.find { |s| s.path.basename('.rb').to_s == parts[1].sub(/\.rb$/, '') }
-    else
-      pond.last_touched
-    end
+              pond.stones.find { |s| s.path.basename('.rb').to_s == parts[1].sub(/\.rb$/, '') }
+            else
+              pond.last_touched
+            end
 
     unless stone
       puts "  🐟 no stone found.\n\n"
@@ -1759,7 +1775,7 @@ module Koipond
     puts "\n  #{stone} knows:"
     kin = stone.kin
     if kin.empty?
-      puts "    (no one. it swims alone.)"
+      puts '    (no one. it swims alone.)'
     else
       kin.each { |k| puts "    #{k}" }
     end
@@ -1770,7 +1786,7 @@ module Koipond
     parts = input.split
     new_style = parts[1]&.to_sym
 
-    if [:gentle, :radical, :poignant].include?(new_style)
+    if %i[gentle radical poignant].include?(new_style)
       puts "  🐟 style set to #{new_style}.\n\n"
       new_style
     else
@@ -1789,8 +1805,7 @@ module Koipond
     end
     puts "\n"
   end
-
-end  # module Koipond
+end
 
 # ╔═══════════════════════════════════════════════════════════╗
 # ║  The Grand Trick                                         ║
@@ -1805,4 +1820,4 @@ end  # module Koipond
 # ║  Ruby doesn't mind. Ruby never minds.                    ║
 # ╚═══════════════════════════════════════════════════════════╝
 
-Koipond.cli! if __FILE__ == $0
+Koipond.cli! if __FILE__ == $PROGRAM_NAME
