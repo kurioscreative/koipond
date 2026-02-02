@@ -341,6 +341,77 @@ module Koipond
       stone.throw!(style: style, &)
     end
 
+    # ── Watch mode ───────────────────────────────────────
+    # Sit by the pond. Watch for ripples.
+    #
+    # No gems. Just mtime polling. Every 30 seconds, we ask:
+    # "Has anything changed?" If yes, throw the most
+    # recent stone and wait for the ripples to settle.
+    #
+    # This is not efficient. This is not scalable.
+    # But it is simple, it has no dependencies,
+    # and it works on every system Ruby runs on.
+    # Sometimes the old ways are best.
+    def watch!(style: :gentle, interval: 30)
+      puts "👁️  Watching #{root} (every #{interval}s)... Ctrl+C to stop.\n\n"
+
+      # Remember when we last saw each stone
+      last_known_mtime = {}
+      stones.each do |s|
+        last_known_mtime[s.path.to_s] = s.path.mtime
+      end
+
+      loop do
+        sleep interval
+
+        # Rescan for new files and check for changes
+        current_stones = Pathname.glob(root.join('**/*.rb'))
+                                 .reject { |p| p.to_s =~ /vendor|node_modules|\.bundle|\.git/ }
+                                 .map { |p| Stone.new(path: p, pond: self) }
+
+        changed = current_stones.select { |s|
+          known = last_known_mtime[s.path.to_s]
+          known.nil? || s.path.mtime > known
+        }
+
+        next if changed.empty?
+
+        # Take the most recently touched (Comparable sorts by mtime)
+        stone = changed.max
+        puts "🪨 #{stone.path.basename} stirred the water...\n"
+
+        # Throw and wait for Claude (blocks until done)
+        reflection = stone.throw!(style: style)
+        puts reflection
+
+        if reflection.reach.positive?
+          reflection.preview
+
+          print "\nApply these changes? (y/n) "
+          if $stdin.gets&.chomp&.downcase == 'y'
+            reflection.apply!
+            puts "\n  🐟 The pond settles. Changes applied.\n\n"
+          else
+            puts "\n  🐟 The stone skipped. Nothing changed.\n\n"
+          end
+        else
+          puts "\n"
+        end
+
+        # Update all known mtimes AFTER processing
+        # This means if 5 files changed while Claude was thinking,
+        # we don't throw 5 times — we already processed the most recent
+        current_stones.each do |s|
+          last_known_mtime[s.path.to_s] = s.path.mtime
+        end
+
+        # Invalidate the cached stones list so next iteration sees fresh files
+        @stones = nil
+      end
+    rescue Interrupt
+      puts "\n🌊 The pond closes. Stillness returns.\n"
+    end
+
     # ── Summary ────────────────────────────────────────
     # The tally method (Ruby 2.7+) counts occurrences.
     # Here we tally file extensions — just because we can.
@@ -679,6 +750,7 @@ module Koipond
       'acquaintances' => 'reading the address book',
       'mentioned_by' => 'who speaks this name?',
       'essence' => 'reading the stone\'s inscription',
+      'watch!' => 'the pond sits still, watching for ripples...',
     }.freeze
 
     def self.on!
@@ -1496,6 +1568,29 @@ module Koipond
     if argv.first == 'swim'
       root = argv[1] || Dir.pwd
       return swim!(root)
+    end
+
+    # ── Early exit for watch mode ────────────────────────
+    if argv.first == 'watch'
+      rest = argv.drop(1)
+      style = case rest
+              in [*, '--radical',  *] then :radical
+              in [*, '--poignant', *] then :poignant
+              else :gentle
+              end
+      # Parse --interval=N or --interval N
+      interval = 30
+      rest.each_with_index do |arg, i|
+        if arg.start_with?('--interval=')
+          interval = arg.split('=', 2).last.to_i
+        elsif arg == '--interval' && rest[i + 1]
+          interval = rest[i + 1].to_i
+        end
+      end
+      interval = 30 if interval < 1 # sanity check
+      root = rest.reject { |a| a.start_with?('--') || a.match?(/^\d+$/) }.first || Dir.pwd
+      narrate! if rest.include?('--trace')
+      return pond(root).watch!(style: style, interval: interval)
     end
 
     # ── Pattern matching on ARGV ─────────────────────────
