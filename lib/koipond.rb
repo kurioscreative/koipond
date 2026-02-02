@@ -581,7 +581,7 @@ module Koipond
         stone: stone,
         kin: kin,
         response: response,
-        rewrites: parse_rewrites(response)
+        patches: parse_patches(response)
       )
     end
 
@@ -621,19 +621,43 @@ module Koipond
       CRITICAL OUTPUT RULES:
       1. DECIDE FIRST: Before outputting anything, decide which files need changes.
       2. NEVER echo input files back. You already have them — don't repeat them.
-      3. ONLY output files you are actually modifying.
+      3. Use SEARCH/REPLACE blocks — never output complete files.
 
       OUTPUT FORMAT (strict):
-      === path/to/file.rb ===
-      (complete evolved file content — ONLY for files you changed)
+      For each file you modify, use search/replace blocks:
 
-      === path/to/another.rb ===
-      (another changed file)
+      === path/to/file.rb ===
+      <<<
+      (exact text to find — must match EXACTLY including whitespace)
+      >>>
+      (replacement text)
+      <<<
+
+      Multiple edits per file allowed — just add more <<< >>> <<< blocks.
+      The search text MUST match the original file exactly.
+
+      Example:
+      === app/models/user.rb ===
+      <<<
+      def greet
+        "Hello"
+      end
+      >>>
+      def greet(name = "friend")
+        "Hello, #{name}!"
+      end
+      <<<
+
+      <<<
+      attr_reader :email
+      >>>
+      attr_reader :email, :verified_at
+      <<<
 
       If NO files need changes, output ONLY this single line:
       === NO CHANGES ===
 
-      No prose. No explanations. No echoing. Just the changed files or NO CHANGES.
+      No prose. No explanations. Just the search/replace blocks or NO CHANGES.
     SYSTEM
 
     # ── Stream from Claude ─────────────────────────────
@@ -698,36 +722,47 @@ module Koipond
       output
     end
 
-    # ── Parse ──────────────────────────────────────────
-    # .split with a regex that has captures returns
-    # the separators too. This is subtle and powerful.
-    # .each_slice(2) groups pairs: [filepath, content].
-    # .to_h turns pairs into a hash.
+    # ── Parse Patches ─────────────────────────────────
+    # Extract search/replace blocks from Claude's response.
     #
-    # Claude sometimes adds markdown fences or explanations.
-    # We strip those to get clean Ruby.
-    def parse_rewrites(text)
-      # Handle explicit "no changes" marker
-      return {} if text.include?('=== NO CHANGES ===')
+    # Format:
+    #   === filepath ===
+    #   <<<
+    #   search text
+    #   >>>
+    #   replace text
+    #   <<<
+    #
+    # Returns an array of Patch objects, grouped by file.
+    def parse_patches(text)
+      return [] if text.include?('=== NO CHANGES ===')
 
+      patches = []
+      current_file = nil
+
+      # Split by file headers, keeping the captured filepath
       parts = text.split(/^===\s*(.+?)\s*===$/)
-      return {} if parts.size < 3
+      return [] if parts.size < 3
 
-      parts
-        .drop(1)
-        .each_slice(2)
-        .filter_map { |filepath, content|
-          next unless filepath && content
-          next if filepath.strip.upcase == 'NO CHANGES'
+      # parts = [preamble, filepath1, content1, filepath2, content2, ...]
+      parts.drop(1).each_slice(2) do |filepath, content|
+        next unless filepath && content
 
-          clean = content
-                  .sub(/\A\s*```\w*\n/, '') # opening markdown fence
-                  .sub(/\n```\s*\z/, '')        # closing markdown fence
-                  .sub(/\n---\n.*/m, '')        # trailing explanation after ---
-                  .strip
-          [filepath.strip, clean]
-        }
-        .to_h
+        current_file = filepath.strip
+        next if current_file.upcase == 'NO CHANGES'
+
+        # Extract all <<< search >>> replace <<< blocks
+        # The /m flag makes . match newlines
+        content.scan(/<<<\n(.*?)\n>>>\n(.*?)\n<<</m) do |search, replace|
+          patches << Patch.new(
+            filepath: current_file,
+            search: search,
+            replace: replace
+          )
+        end
+      end
+
+      patches
     end
   end
 
@@ -750,55 +785,72 @@ module Koipond
   # ║    path.then { |p| File.read(p) }.then { |s| parse(s) } ║
   # ╚═══════════════════════════════════════════════════════╝
 
-  Reflection = Struct.new(:stone, :kin, :response, :rewrites, keyword_init: true) do
+  Reflection = Struct.new(:stone, :kin, :response, :patches, keyword_init: true) do
     def self.empty(reason)
-      new(stone: nil, kin: [], response: reason, rewrites: {})
+      new(stone: nil, kin: [], response: reason, patches: [])
     end
 
-    def empty? = rewrites.empty?
+    def empty? = patches.empty?
+
+    # How many files will be touched?
+    def reach
+      patches.map(&:filepath).uniq.size
+    end
 
     # Preview what Claude would change.
-    # Don't touch the files. Just look.
-    # .tap returns self, so you can chain:
-    #   reflection.preview.apply!
+    # Show search/replace pairs, not full file contents.
+    # Easier to review. Less scrolling.
     def preview
-      rewrites.each do |filepath, content|
+      patches.group_by(&:filepath).each do |filepath, file_patches|
         puts "\n#{'═' * 60}"
-        puts "  📝 #{filepath}"
+        puts "  📝 #{filepath} (#{file_patches.size} edit#{'s' unless file_patches.size == 1})"
         puts '═' * 60
 
-        # Show first 25 lines, hint at the rest.
-        lines = content.lines
-        puts lines.first(25).join
-        puts "  ... (#{lines.size} total lines)" if lines.size > 25
-      end
-      self # return self for chaining
-    end
-
-    # Apply the rewrites. Let the ripples land.
-    #
-    # .freeze makes `before` immutable.
-    # The past cannot be edited. This is not a technical
-    # constraint — it's a philosophical one.
-    # Ruby lets you express philosophy in code.
-    def apply!
-      rewrites.each do |filepath, content|
-        target = Pathname.new(filepath)
-        target.dirname.mkpath
-
-        before = target.exist? ? target.read.freeze : nil
-        target.write(content)
-
-        if before
-          puts "  ♻️  Rewrote #{filepath} (was #{before.lines.size} lines, now #{content.lines.size})"
-        else
-          puts "  ✨ Created #{filepath}"
+        file_patches.each_with_index do |patch, i|
+          puts "\n  Edit #{i + 1}:" if file_patches.size > 1
+          puts '  ─ search ─'
+          patch.search.lines.first(5).each do |l|
+            puts "  - #{l}"
+          end
+          puts '  ...' if patch.search.lines.size > 5
+          puts '  ─ replace ─'
+          patch.replace.lines.first(5).each do |l|
+            puts "  + #{l}"
+          end
+          puts '  ...' if patch.replace.lines.size > 5
         end
       end
       self
     end
 
-    def reach = rewrites.size
+    # Apply the patches. Surgical edits, not full rewrites.
+    #
+    # For each file, read content, apply patches in order,
+    # write back. Patches that don't match are warned about.
+    def apply!
+      patches.group_by(&:filepath).each do |filepath, file_patches|
+        target = Pathname.new(filepath)
+        content = target.exist? ? target.read : ''
+
+        applied = 0
+        file_patches.each do |patch|
+          if content.include?(patch.search)
+            content = content.sub(patch.search, patch.replace)
+            applied += 1
+          else
+            puts "  ⚠️  Could not find search text in #{filepath}:"
+            puts "     #{patch.search.lines.first&.strip}..."
+          end
+        end
+
+        next unless applied.positive?
+
+        target.dirname.mkpath
+        target.write(content)
+        puts "  ♻️  Patched #{filepath} (#{applied} edit#{'s' unless applied == 1})"
+      end
+      self
+    end
 
     def to_s
       if empty?
@@ -808,7 +860,8 @@ module Koipond
           "🔮 #{response}"
         end
       else
-        "🔮 Reflection: #{reach} files reimagined from #{stone}"
+        edit_count = patches.size
+        "🔮 Reflection: #{edit_count} edit#{'s' unless edit_count == 1} across #{reach} file#{'s' unless reach == 1} from #{stone}"
       end
     end
   end
@@ -1018,6 +1071,14 @@ module Koipond
   Comment = Data.define(:text, :line, :yard) {
     def yard? = yard
     def to_s = text
+  }
+
+  # ── Patch ───────────────────────────────────────────
+  # A surgical edit: find this text, replace with that.
+  # Smaller than full-file rewrites. Easier to review.
+  # Less tokens. More precision.
+  Patch = Data.define(:filepath, :search, :replace) {
+    def to_s = "#{filepath}: #{search.lines.first&.strip}... → #{replace.lines.first&.strip}..."
   }
 
   MethodChange = Data.define(:name, :before, :after) {
