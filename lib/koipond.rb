@@ -131,51 +131,38 @@ module Koipond
       ''
     end
 
-    # ── Acquaintances ──────────────────────────────────
-    # Parse the requires. They're a stone's address book.
-    #
-    # .scan returns all matches as an array.
-    # .flatten collapses nested captures.
-    # .filter_map maps and discards nils in one pass.
-    #
-    # This is Ruby's pipeline style:
-    # each method returns something the next can use.
-    # No temp variables. No mutation. Just flow.
-    def acquaintances
-      return [] unless pond
-
-      essence
-        .scan(/require(?:_relative)?\s+['"]([^'"]+)['"]/)
-        .flatten
-        .filter_map { |r| pond.resolve(r, relative_to: path) }
-    end
-
-    # ── Mentioned By ───────────────────────────────────
-    # Who speaks your name?
-    # The files that reference you are your kin
-    # whether they know it or not.
-    def mentioned_by
-      return [] unless pond
-
-      name_stem = path.basename('.rb').to_s
-      pond.stones.select { |s|
-        s.path != path && s.essence.include?(name_stem)
-      }
-    end
-
     # ── Kin ────────────────────────────────────────────
-    # All relatives. Union of both directions.
-    # Set ensures no duplicates — because in Ruby,
-    # Set#| is the union operator, and that's beautiful.
+    # Who are your relatives? Prism knows.
+    #
+    # Instead of regex-matching requires and filename mentions,
+    # we now use Prism to understand structure:
+    #
+    #   • Constant references: flower.rb uses `Seed` → kin with seed.rb
+    #   • Inheritance: `class Flower < Seed` → kin with parent
+    #   • Shared includes: both include Enumerable → kin
+    #   • Requires: parsed from AST, not regex
+    #
+    # DeepKin.discover returns { stone => [reasons] }.
+    # We cache the reasons for --trace narration.
     def kin
-      seen = Set.new
-      (acquaintances + mentioned_by).each_with_object([]) { |k, acc|
-        key = k.path.to_s
-        unless seen.include?(key)
-          seen.add(key)
-          acc << k
-        end
-      }
+      return [] unless pond
+
+      @kin_result ||= DeepKin.discover(
+        stone: self,
+        pond_stones: pond.stones,
+        cache: pond.shape_cache
+      )
+      @kin_result.keys
+    end
+
+    # ── Kin Reasons ────────────────────────────────────
+    # Why are these files related? The reasons are pedagogically
+    # valuable — they show what Prism discovered through AST analysis.
+    #
+    # Returns a hash: { stone => ["references Seed", "inherits from Base"] }
+    def kin_reasons
+      kin # ensure discovery has happened
+      @kin_result || {}
     end
 
     # ── Deep Kin ───────────────────────────────────────
@@ -264,6 +251,12 @@ module Koipond
 
     def initialize(root = Dir.pwd)
       @root = Pathname.new(root).expand_path
+    end
+
+    # Lazy-initialized shape cache for Prism-powered kin discovery.
+    # ShapeCache is defined later in the file, so we defer initialization.
+    def shape_cache
+      @shape_cache ||= ShapeCache.new
     end
 
     # ── Class method with endless syntax ───────────────
@@ -741,19 +734,21 @@ module Koipond
     TALES = {
       'last_touched' => 'the pond remembers who moved last',
       'kin' => 'searching for family in the water',
+      'kin_reasons' => 'recalling why they are kin',
       'deep_kin' => 'following the current deeper...',
       'throw!' => 'a stone arcs through the air',
       'propagate!' => 'ripples spreading outward',
       'ask_claude' => 'whispering to Claude across the wire',
       'apply!' => 'the future takes shape',
       'preview' => 'peering into what might be',
-      'acquaintances' => 'reading the address book',
-      'mentioned_by' => 'who speaks this name?',
       'essence' => 'reading the stone\'s inscription',
       'watch!' => 'the pond sits still, watching for ripples...',
     }.freeze
 
     def self.on!
+      @active = true
+
+      # Standard method call narration
       @trace = TracePoint.new(:call) do |tp|
         next unless tp.defined_class.to_s.include?('Koipond')
 
@@ -766,14 +761,33 @@ module Koipond
           puts "  🐟 #{tp.method_id} stirs beneath the surface"
         end
       end
+
+      # Special narration for kin discovery — show reasons after return
+      @kin_trace = TracePoint.new(:return) do |tp|
+        next unless tp.defined_class.to_s.include?('Koipond::Stone')
+        next unless tp.method_id == :kin
+
+        stone = tp.self
+        stone.kin_reasons.each do |_relative, reasons|
+          reasons.each do |reason|
+            puts "     → #{reason}"
+          end
+        end
+      end
+
       @trace.enable
+      @kin_trace.enable
       puts '  🐟 Narration enabled. Watch the fish.'
     end
 
     def self.off!
+      @active = false
       @trace&.disable
+      @kin_trace&.disable
       puts '  🐟 The pond falls silent.'
     end
+
+    def self.active? = @active
   end
 
   # ╔═══════════════════════════════════════════════════════╗
@@ -1460,8 +1474,14 @@ module Koipond
   module DeepKin
     module_function
 
-    def discover(stone:, pond_stones:)
-      my_shape = Parser.parse_shape(stone.essence, path: stone.path.to_s)
+    # Discover kin through structural analysis, not just text matching.
+    # Returns a hash of { stone => [reasons] } where reasons explain
+    # the relationship (pedagogically valuable for --trace mode).
+    #
+    # The cache parameter accepts a ShapeCache instance to avoid
+    # re-parsing files on every call. Without caching, this is O(n²).
+    def discover(stone:, pond_stones:, cache: nil)
+      my_shape = cache ? cache.shape_for(stone) : Parser.parse_shape(stone.essence, path: stone.path.to_s)
       my_classes = Set.new(my_shape.classes + my_shape.modules)
 
       kin = {}
@@ -1469,7 +1489,7 @@ module Koipond
       pond_stones.each do |other|
         next if other.path == stone.path
 
-        other_shape = Parser.parse_shape(other.essence, path: other.path.to_s)
+        other_shape = cache ? cache.shape_for(other) : Parser.parse_shape(other.essence, path: other.path.to_s)
 
         reasons = []
 
