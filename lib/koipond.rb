@@ -510,9 +510,27 @@ module Koipond
     # Three values, returned as three variables.
     # Multiple return values without tuples or wrappers.
     # Ruby just lets you.
+    CLAUDE_SYSTEM_PROMPT = <<~SYSTEM.freeze
+      You rewrite Ruby files. Output ONLY in this format:
+
+      === path/to/file.rb ===
+      (complete file content)
+
+      === another/file.rb ===
+      (complete file content)
+
+      RULES:
+      1. Output ONLY === FILEPATH === blocks
+      2. No prose, no explanations, no markdown, no analysis
+      3. If no changes needed, output exactly: === NO CHANGES ===
+      4. Never explain your reasoning
+    SYSTEM
+
     def ask_claude(prompt)
       stdout, stderr, status = Open3.capture3(
-        'claude', '-p', prompt, '--output-format', 'text'
+        'claude', '-p', prompt,
+        '--system-prompt', CLAUDE_SYSTEM_PROMPT,
+        '--output-format', 'text'
       )
 
       unless status.success?
@@ -531,6 +549,9 @@ module Koipond
     # Claude sometimes adds markdown fences or explanations.
     # We strip those to get clean Ruby.
     def parse_rewrites(text)
+      # Handle explicit "no changes" marker
+      return {} if text.include?('=== NO CHANGES ===')
+
       parts = text.split(/^===\s*(.+?)\s*===$/)
       return {} if parts.size < 3
 
@@ -539,6 +560,7 @@ module Koipond
         .each_slice(2)
         .filter_map { |filepath, content|
           next unless filepath && content
+          next if filepath.strip.upcase == 'NO CHANGES'
           clean = content
             .sub(/\A\s*```\w*\n/, '')    # opening markdown fence
             .sub(/\n```\s*\z/, '')        # closing markdown fence
@@ -620,7 +642,15 @@ module Koipond
     def reach = rewrites.size
 
     def to_s
-      empty? ? "🔮 #{response}" : "🔮 Reflection: #{reach} files reimagined from #{stone}"
+      if empty?
+        if response.to_s.strip.empty? || response.include?('NO CHANGES')
+          "🔮 the pond is still. no changes needed."
+        else
+          "🔮 #{response}"
+        end
+      else
+        "🔮 Reflection: #{reach} files reimagined from #{stone}"
+      end
     end
   end
 
