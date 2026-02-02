@@ -618,13 +618,22 @@ module Koipond
       Use Ruby's soul: blocks, Enumerable, pattern matching, endless methods.
       Favor code that reads like a poem.
 
+      CRITICAL OUTPUT RULES:
+      1. DECIDE FIRST: Before outputting anything, decide which files need changes.
+      2. NEVER echo input files back. You already have them — don't repeat them.
+      3. ONLY output files you are actually modifying.
+
       OUTPUT FORMAT (strict):
       === path/to/file.rb ===
-      (complete evolved file content)
+      (complete evolved file content — ONLY for files you changed)
 
-      If truly nothing wants to change: === NO CHANGES ===
+      === path/to/another.rb ===
+      (another changed file)
 
-      No prose outside === blocks. Let the code speak.
+      If NO files need changes, output ONLY this single line:
+      === NO CHANGES ===
+
+      No prose. No explanations. No echoing. Just the changed files or NO CHANGES.
     SYSTEM
 
     # ── Stream from Claude ─────────────────────────────
