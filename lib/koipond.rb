@@ -31,14 +31,7 @@ require 'open3'
 require 'json'
 require_relative 'koipond/version'
 
-# We conditionally require Prism — it ships natively with Ruby >= 3.3.
-# If unavailable, we fall back to RubyVM::AbstractSyntaxTree.
-PRISM_AVAILABLE = begin
-  require 'prism'
-  true
-rescue LoadError
-  false
-end
+require 'prism'
 
 module Koipond
   # ╔═══════════════════════════════════════════════════════╗
@@ -1099,157 +1092,149 @@ module Koipond
   #
   #   ShapeVisitor — Prism-powered AST traversal
   #
-  #   Only defined when Prism is available.
-  #
   # ════════════════════════════════════════════════════════════════
 
-  if PRISM_AVAILABLE
+  class ShapeVisitor < Prism::Visitor
+    attr_reader :shape
 
-    class ShapeVisitor < Prism::Visitor
-      attr_reader :shape
+    def initialize
+      @shape = Shape.new
+      @visibility_stack = [:public] # stack because classes nest
+      @current_class = nil
+      super
+    end
 
-      def initialize
-        @shape = Shape.new
-        @visibility_stack = [:public] # stack because classes nest
-        @current_class = nil
-        super
-      end
+    # ── Requires ──────────────────────────────────────
+    def visit_call_node(node)
+      case node.name
+      when :require, :require_relative
+        if node.arguments&.arguments&.first.is_a?(Prism::StringNode)
+          @shape.requires << Requirement.new(
+            type: node.name,
+            path: node.arguments.arguments.first.unescaped,
+            location: node.location
+          )
+        end
 
-      # ── Requires ──────────────────────────────────────
-      def visit_call_node(node)
-        case node.name
-        when :require, :require_relative
-          if node.arguments&.arguments&.first.is_a?(Prism::StringNode)
-            @shape.requires << Requirement.new(
+      when :include, :extend, :prepend
+        if node.arguments&.arguments&.first
+          arg = node.arguments.arguments.first
+          name = extract_constant_path(arg)
+          if name
+            @shape.includes << Inclusion.new(
               type: node.name,
-              path: node.arguments.arguments.first.unescaped,
+              name: name,
               location: node.location
             )
           end
-
-        when :include, :extend, :prepend
-          if node.arguments&.arguments&.first
-            arg = node.arguments.arguments.first
-            name = extract_constant_path(arg)
-            if name
-              @shape.includes << Inclusion.new(
-                type: node.name,
-                name: name,
-                location: node.location
-              )
-            end
-          end
-
-        when :attr_reader, :attr_accessor, :attr_writer
-          node.arguments&.arguments&.each do |arg|
-            next unless arg.is_a?(Prism::SymbolNode)
-
-            @shape.attrs << Attribute.new(
-              kind: node.name,
-              name: arg.unescaped.to_sym,
-              location: node.location
-            )
-          end
-
-        when :private, :protected, :public
-          @visibility_stack[-1] = node.name if node.arguments.nil?
         end
 
-        super
-      end
+      when :attr_reader, :attr_accessor, :attr_writer
+        node.arguments&.arguments&.each do |arg|
+          next unless arg.is_a?(Prism::SymbolNode)
 
-      # ── Method definitions ────────────────────────────
-      def visit_def_node(node)
-        @shape.methods << Method.new(
-          name: node.name,
-          visibility: @visibility_stack.last,
-          params: extract_params(node),
-          location: node.location,
-          class_name: @current_class,
-          class_method: false
-        )
-        super
-      end
-
-      # ── Class and Module definitions ──────────────────
-      def visit_class_node(node)
-        name = extract_constant_path(node.constant_path)
-        @shape.classes << name if name
-
-        parent = @current_class
-        @current_class = name
-        @visibility_stack.push(:public)
-
-        if node.superclass
-          sc = extract_constant_path(node.superclass)
-          @shape.superclasses[name] = sc if sc
+          @shape.attrs << Attribute.new(
+            kind: node.name,
+            name: arg.unescaped.to_sym,
+            location: node.location
+          )
         end
 
-        super
-
-        @visibility_stack.pop
-        @current_class = parent
+      when :private, :protected, :public
+        @visibility_stack[-1] = node.name if node.arguments.nil?
       end
 
-      def visit_module_node(node)
-        name = extract_constant_path(node.constant_path)
-        @shape.modules << name if name
+      super
+    end
 
-        parent = @current_class
-        @current_class = name
-        @visibility_stack.push(:public)
-        super
-        @visibility_stack.pop
-        @current_class = parent
+    # ── Method definitions ────────────────────────────
+    def visit_def_node(node)
+      @shape.methods << Method.new(
+        name: node.name,
+        visibility: @visibility_stack.last,
+        params: extract_params(node),
+        location: node.location,
+        class_name: @current_class,
+        class_method: false
+      )
+      super
+    end
+
+    # ── Class and Module definitions ──────────────────
+    def visit_class_node(node)
+      name = extract_constant_path(node.constant_path)
+      @shape.classes << name if name
+
+      parent = @current_class
+      @current_class = name
+      @visibility_stack.push(:public)
+
+      if node.superclass
+        sc = extract_constant_path(node.superclass)
+        @shape.superclasses[name] = sc if sc
       end
 
-      # ── Constant reads ────────────────────────────────
-      def visit_constant_read_node(node)
-        @shape.constant_refs << node.name
-        super
-      end
+      super
 
-      def visit_constant_path_node(node)
-        full_path = extract_constant_path(node)
-        @shape.constant_refs << full_path if full_path
-        super
-      end
+      @visibility_stack.pop
+      @current_class = parent
+    end
 
-      private
+    def visit_module_node(node)
+      name = extract_constant_path(node.constant_path)
+      @shape.modules << name if name
 
-      def extract_constant_path(node)
-        case node
-        when Prism::ConstantReadNode
-          node.name.to_s
-        when Prism::ConstantPathNode
-          parent = node.parent ? extract_constant_path(node.parent) : nil
-          child  = node.name.to_s
-          parent ? "#{parent}::#{child}" : child
-        end
-      end
+      parent = @current_class
+      @current_class = name
+      @visibility_stack.push(:public)
+      super
+      @visibility_stack.pop
+      @current_class = parent
+    end
 
-      def extract_params(node)
-        return Params.empty unless node.parameters
+    # ── Constant reads ────────────────────────────────
+    def visit_constant_read_node(node)
+      @shape.constant_refs << node.name
+      super
+    end
 
-        p = node.parameters
-        Params.new(
-          required: p.requireds.map { |r| r.respond_to?(:name) ? r.name : r.to_s },
-          optional: p.optionals.map(&:name),
-          rest: p.rest&.name,
-          keywords: p.keywords.map(&:name),
-          keyword_rest: p.keyword_rest.respond_to?(:name) ? p.keyword_rest.name : nil,
-          block: p.block&.name
-        )
+    def visit_constant_path_node(node)
+      full_path = extract_constant_path(node)
+      @shape.constant_refs << full_path if full_path
+      super
+    end
+
+    private
+
+    def extract_constant_path(node)
+      case node
+      when Prism::ConstantReadNode
+        node.name.to_s
+      when Prism::ConstantPathNode
+        parent = node.parent ? extract_constant_path(node.parent) : nil
+        child  = node.name.to_s
+        parent ? "#{parent}::#{child}" : child
       end
     end
 
+    def extract_params(node)
+      return Params.empty unless node.parameters
+
+      p = node.parameters
+      Params.new(
+        required: p.requireds.map { |r| r.respond_to?(:name) ? r.name : r.to_s },
+        optional: p.optionals.map(&:name),
+        rest: p.rest&.name,
+        keywords: p.keywords.map(&:name),
+        keyword_rest: p.keyword_rest.respond_to?(:name) ? p.keyword_rest.name : nil,
+        block: p.block&.name
+      )
+    end
   end
 
   # ════════════════════════════════════════════════════════════════
   #
-  #   Parser — Unified interface for shape extraction
-  #
-  #   Falls back to old AST if Prism isn't available.
+  #   Parser — Shape extraction via Prism
   #
   # ════════════════════════════════════════════════════════════════
 
@@ -1257,14 +1242,6 @@ module Koipond
     module_function
 
     def parse_shape(source, path: '(unknown)')
-      if PRISM_AVAILABLE
-        parse_with_prism(source, path: path)
-      else
-        parse_with_old_ast(source, path: path)
-      end
-    end
-
-    def parse_with_prism(source, path: '(unknown)')
       result = Prism.parse(source)
 
       unless result.success?
@@ -1287,73 +1264,6 @@ module Koipond
 
       visitor.shape.solidify!
       visitor.shape
-    end
-
-    def parse_with_old_ast(source, path: '(unknown)')
-      shape = Shape.new
-      begin
-        ast = RubyVM::AbstractSyntaxTree.parse(source)
-      rescue SyntaxError => e
-        warn "  [ast] #{path}: #{e.message}"
-        return shape.solidify!
-      end
-
-      private_line = nil
-      walk_old_ast(ast) do |n|
-        private_line = n.first_lineno if n.type == :VCALL && n.children[0] == :private
-
-        case n.type
-        when :DEFN
-          vis = private_line && n.first_lineno > private_line ? :private : :public
-          shape.methods << Method.new(
-            name: n.children[0],
-            visibility: vis,
-            params: Params.empty,
-            location: nil,
-            class_name: nil,
-            class_method: false
-          )
-        when :CONST
-          shape.constant_refs << n.children[0].to_s
-        when :FCALL
-          method_name = n.children[0]
-          args = n.children[1]
-          case method_name
-          when :require, :require_relative
-            if args&.type == :LIST && args.children[0]&.type == :STR
-              shape.requires << Requirement.new(
-                type: method_name, path: args.children[0].children[0], location: nil
-              )
-            end
-          when :include, :extend
-            if args&.type == :LIST && args.children[0]&.type == :CONST
-              shape.includes << Inclusion.new(
-                type: method_name, name: args.children[0].children[0].to_s, location: nil
-              )
-            end
-          when :attr_reader, :attr_accessor, :attr_writer
-            if args&.type == :LIST
-              args.children.compact.each do |c|
-                shape.attrs << Attribute.new(kind: method_name, name: c.children[0], location: nil) if c.type == :LIT
-              end
-            end
-          end
-        when :CLASS
-          shape.classes << n.children[0].children.last.to_s if n.children[0]&.type == :COLON2
-        when :MODULE
-          shape.modules << n.children[0].children.last.to_s if n.children[0]&.type == :COLON2
-        end
-      end
-
-      shape.solidify!
-      shape
-    end
-
-    def walk_old_ast(node, &block)
-      return unless node.is_a?(RubyVM::AbstractSyntaxTree::Node)
-
-      block.call(node)
-      node.children.each { |c| walk_old_ast(c, &block) }
     end
   end
 

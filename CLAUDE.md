@@ -58,7 +58,7 @@ The code intentionally demonstrates these Ruby patterns:
 
 ## Requirements
 
-- Ruby >= 3.1 (3.3+ for native Prism)
+- Ruby >= 3.3 (for native Prism)
 - `claude` CLI installed and in PATH
 
 ## Commands
@@ -66,11 +66,11 @@ The code intentionally demonstrates these Ruby patterns:
 ### Run the CLI
 
 ```bash
-bin/koi                           # Gentle ripple from most recent file
-bin/koi --radical                 # Radical reimagining
-bin/koi --poignant                # In _why's spirit
-bin/koi --trace                   # Watch internal narration
-bin/koi ~/path --radical          # Specify project path
+koi                               # Gentle ripple from most recent file
+koi --radical                     # Radical reimagining
+koi --poignant                    # In _why's spirit
+koi --trace                       # Watch internal narration
+koi ~/path --radical              # Specify project path
 ```
 
 ### Run the demos
@@ -84,7 +84,7 @@ ruby examples/sim.rb              # Interactive session replay
 
 ```bash
 gem build koipond.gemspec
-gem install koipond-0.2.0.prism.gem
+gem install koipond
 ```
 
 ## Style Guidelines
@@ -101,9 +101,8 @@ When modifying, preserve this pedagogical style—the "why" comments are as impo
 ## Key Design Decisions
 
 1. **Single-file gem**: `koipond.rb` is both library and executable. \_why would approve.
-2. **No external dependencies**: Only stdlib (pathname, open3, json, set).
-3. **Fallback support**: Prism code falls back to `RubyVM::AbstractSyntaxTree` on Ruby < 3.3.
-4. **Immutable past**: `.freeze` on "before" states is philosophical, not just technical.
+2. **No external dependencies**: Only stdlib (pathname, open3, json, set) plus Prism (native in Ruby 3.3+).
+3. **Immutable past**: `.freeze` on "before" states is philosophical, not just technical.
 
 ## Working with Claude Integration
 
