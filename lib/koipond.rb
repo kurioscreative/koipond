@@ -628,13 +628,16 @@ module Koipond
     SYSTEM
 
     # ── Stream from Claude ─────────────────────────────
-    # Open3.popen3 gives us live pipes instead of waiting.
-    # We read stdout char-by-char so the user sees Claude
-    # thinking in real time — no silent waiting.
+    # --output-format stream-json with --include-partial-messages
+    # gives us real-time token streaming. Each line is a JSON object.
     #
-    # A background thread drains stderr to prevent deadlock
-    # (pipes can block if buffers fill). This is the Ruby way:
-    # threads for IO, not for computation.
+    # We look for content_block_delta events which contain the
+    # text as it's generated. The final "result" event contains
+    # the complete text for parsing.
+    #
+    # This is Ruby's strength: iterate lines, parse JSON,
+    # pattern match on the type. No callbacks. No promises.
+    # Just readable imperative code.
     def ask_claude(prompt)
       output = String.new
       err_output = String.new
@@ -642,18 +645,39 @@ module Koipond
       Open3.popen3(
         'claude', '-p', prompt,
         '--system-prompt', CLAUDE_SYSTEM_PROMPT,
-        '--output-format', 'text'
+        '--output-format', 'stream-json',
+        '--verbose',
+        '--include-partial-messages'
       ) do |stdin, stdout, stderr, wait_thr|
         stdin.close
 
         # Drain stderr in background to prevent pipe deadlock
         err_thread = Thread.new { err_output = stderr.read }
 
-        # Stream stdout to terminal while collecting for parsing
-        stdout.each_char do |char|
-          print char
-          $stdout.flush # unbuffered output for smooth streaming
-          output << char
+        # Parse streaming JSON, print deltas, collect final result
+        stdout.each_line do |line|
+          next if line.strip.empty?
+
+          begin
+            event = JSON.parse(line)
+          rescue JSON::ParserError
+            next
+          end
+
+          case event['type']
+          when 'stream_event'
+            # Token-by-token streaming: content_block_delta contains text
+            if event.dig('event', 'type') == 'content_block_delta'
+              text = event.dig('event', 'delta', 'text')
+              if text
+                print text
+                $stdout.flush
+              end
+            end
+          when 'result'
+            # Final result contains the complete text for parsing
+            output = event['result'].to_s
+          end
         end
 
         err_thread.join
