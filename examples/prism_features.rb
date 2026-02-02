@@ -12,7 +12,7 @@
 #   Run: ruby examples/prism_features.rb
 # ======================================================================
 
-require_relative '../lib/koi'
+require_relative '../lib/koipond'
 
 # ── Feature 1: Pattern Matching on AST Nodes ─────────────
 
@@ -196,7 +196,7 @@ puts "    c.location.start_line  # line number"
 puts "    c.location.slice       # the comment text"
 puts "  end"
 puts
-puts "  This means Koi can:"
+puts "  This means Koipond can:"
 puts "    - Read YARD annotations (@param, @return, @api)"
 puts "    - Preserve TODO/FIXME markers when rewriting"
 puts "    - Show Claude the author's intent, not just the code"
@@ -233,8 +233,8 @@ puts "  Prism would parse ALL of these."
 puts "  It returns a partial AST + error diagnostics."
 puts "  The AST is incomplete but usable."
 puts
-puts "  For Koi, this means: even if you save a file mid-edit,"
-puts "  with a syntax error, Koi can still understand its shape"
+puts "  For Koipond, this means: even if you save a file mid-edit,"
+puts "  with a syntax error, Koipond can still understand its shape"
 puts "  and find its kin. The ripple doesn't stop for a typo."
 
 # ======================================================================
@@ -267,7 +267,7 @@ puts "  You can extract the EXACT SOURCE TEXT of any node"
 puts "  without reading the file, without regex, without counting lines."
 puts "  It's a window into the source at any granularity."
 puts
-puts "  For Koi: surgical method replacement."
+puts "  For Koipond: surgical method replacement."
 puts "  Change one method, leave everything else byte-identical."
 puts "  The old AST can only point at line ranges."
 puts "  Prism can point at bytes."
@@ -312,17 +312,17 @@ puts "  not a literal. The old AST can't distinguish these."
 
 puts
 puts "=" * 64
-puts "  What This Means for Koi"
+puts "  What This Means for Koipond"
 puts "=" * 64
 puts
 
 puts <<~MEANING
-  Original Koi (regex):
+  Original Koipond (regex):
     Kin discovery:  scan for require_relative, grep for filenames
     Change info:    "this file changed"
     Prompt to Claude: "here's the whole file, here are related files"
 
-  Prism Koi (AST):
+  Prism Koipond (AST):
     Kin discovery:  constant references, superclasses, shared includes
     Change info:    "added :depth attr, <=> method, Comparable include"
     Prompt to Claude: structured diff + shapes + reasons for kinship

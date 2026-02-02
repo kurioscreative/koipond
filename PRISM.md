@@ -1,10 +1,10 @@
-# Prism Pond — When Koi Learns to See
+# Prism Pond — When Koipond Learns to See
 
 > _"And what is the use of a book," thought Alice, "without pictures or conversation?"_
 
-The original Koi found relationships through text: regex for `require`, string matching for filenames. It was like finding your family by looking at who shares your last name in the phone book. It works. But it misses stepchildren, in-laws, and the neighbor who raised you.
+The original Koipond found relationships through text: regex for `require`, string matching for filenames. It was like finding your family by looking at who shares your last name in the phone book. It works. But it misses stepchildren, in-laws, and the neighbor who raised you.
 
-Prism gives Koi eyes.
+Prism gives Koipond eyes.
 
 ---
 
@@ -127,7 +127,7 @@ result.value       # => ProgramNode — a PARTIAL but USABLE AST
 
 Prism says: _"I see you're not finished. Let me understand what I can."_
 
-For Koi, this means the ripple never stops for a typo. You save mid-thought, with a missing `end` or a stray comma, and Koi can still parse the file, understand its shape, find its kin, and know what changed. The old parser demands perfection before it'll speak to you.
+For Koipond, this means the ripple never stops for a typo. You save mid-thought, with a missing `end` or a stray comma, and Koipond can still parse the file, understand its shape, find its kin, and know what changed. The old parser demands perfection before it'll speak to you.
 
 ### 5. Comments — The Author's Voice Preserved
 
@@ -141,7 +141,7 @@ end
 
 The old AST throws comments away. They're invisible. Destroyed. As if the programmer never wrote them.
 
-Prism preserves every comment with its exact location. This means Koi can:
+Prism preserves every comment with its exact location. This means Koipond can:
 
 - Read YARD annotations (`@param`, `@return`, `@api public`)
 - Find TODO/FIXME markers and tell Claude to respect them
@@ -167,7 +167,7 @@ loc.slice           # "def swim(direction = :north, speed: 1.0)\n    Fish.new(se
 
 `.slice` is the killer feature. It returns the _exact source text_ of any node — a method, a class, an argument, a constant reference. No file reading. No regex extraction. No line-range slicing with off-by-one errors.
 
-For Koi, this enables **surgical replacement**: change one method body, leave every other byte identical. The old AST gives you line ranges, which is like performing surgery with oven mitts.
+For Koipond, this enables **surgical replacement**: change one method body, leave every other byte identical. The old AST gives you line ranges, which is like performing surgery with oven mitts.
 
 ### 7. Rich Parameter Information
 
@@ -190,7 +190,7 @@ The old AST's ARGS node is a positional array whose structure changes between Ru
 
 ---
 
-## How This Transforms Koi
+## How This Transforms Koipond
 
 ### Kin Discovery: From Name-Matching to Dependency-Tracing
 
@@ -203,7 +203,7 @@ The old AST's ARGS node is a positional array whose structure changes between Ru
 
 1. Parse the AST → extract all constant references (`Fish`, `Stone`, `Pathname`)
 2. Parse every file in the pond → find which files _define_ those constants
-3. Check superclass relationships (`class Koi < Fish` → Fish is kin)
+3. Check superclass relationships (`class Koipond < Fish` → Fish is kin)
 4. Check shared module includes (both include `Comparable`? interesting.)
 5. Check shared constant references (both reference `Config`? worth examining.)
 
@@ -270,7 +270,7 @@ ruby examples/prism_features.rb
 # The interactive simulation
 ruby examples/sim.rb
 
-# The full Koi CLI (with Claude)
+# The full Koipond CLI (with Claude)
 koi --poignant /path/to/project
 ```
 
@@ -288,7 +288,7 @@ require 'prism'
 The `Shape` is the central abstraction. It represents what a file looks like from the outside — its promises, its handshake with the world:
 
 ```ruby
-shape = Koi::Parser.parse_shape(source)
+shape = Koipond::Parser.parse_shape(source)
 
 shape.classes           # => ["Pond"]
 shape.modules           # => ["Ocean"]
@@ -303,7 +303,7 @@ shape.public_interface   # => { methods: [...], readable: [:name, :depth], ... }
 Two Shapes can be diffed:
 
 ```ruby
-diff = Koi::ShapeDiff.new(before: old_shape, after: new_shape)
+diff = Koipond::ShapeDiff.new(before: old_shape, after: new_shape)
 diff.methods_added       # => [Method(:drain!, :public, "()")]
 diff.methods_changed     # => [MethodChange(:swim, before: "()", after: "(direction, speed:)")]
 diff.attrs_added         # => [Attribute(:attr_reader, :depth)]
@@ -332,11 +332,11 @@ The diff becomes the core of what Claude receives.
 │  Layer 1: Text (how)                            │
 │  Raw source code, line-by-line                  │
 │  "Here's 45 lines of Ruby"                      │
-│  → Where original Koi lives (regex, grep)       │
+│  → Where original Koipond lives (regex, grep)       │
 └─────────────────────────────────────────────────┘
 ```
 
-Prism lifts Koi from Layer 1 to Layer 2, with glimpses into Layer 3. Each layer up means Claude needs less context to make better changes.
+Prism lifts Koipond from Layer 1 to Layer 2, with glimpses into Layer 3. Each layer up means Claude needs less context to make better changes.
 
 ---
 
@@ -377,6 +377,6 @@ Speculative directions, flagged as such:
 
 > _"When you don't create things, you become defined by your tastes rather than ability."_ — \_why
 
-Prism is Ruby's gift to the tools that understand Ruby. Koi is a small tool that uses that gift to let Claude understand your code — not as text, but as structure, intention, and relationship.
+Prism is Ruby's gift to the tools that understand Ruby. Koipond is a small tool that uses that gift to let Claude understand your code — not as text, but as structure, intention, and relationship.
 
 Throw a stone. The pond has learned to see.

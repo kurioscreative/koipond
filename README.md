@@ -1,8 +1,8 @@
-# 🐟 Koi
+# 🐟 Koipond
 
 **Throw a stone into your pond of code. Watch the ripples rewrite the shore.**
 
-Koi finds the most recently changed Ruby file in your project, discovers its relatives, and asks Claude to reimagine them. It is built from Ruby's intrinsic qualities — the features that make Ruby _Ruby_ and not just another language with different syntax.
+Koipond finds the most recently changed Ruby file in your project, discovers its relatives, and asks Claude to reimagine them. It is built from Ruby's intrinsic qualities — the features that make Ruby _Ruby_ and not just another language with different syntax.
 
 This is not a production tool. This is a toy. All the best things are.
 
@@ -23,13 +23,13 @@ Kin: 🪨 authentication.rb, 🪨 profile.rb
 🔮 Reflection: 2 files reimagined from 🪨 user.rb
 ```
 
-That's Koi. One stone, thrown by you. Ripples carried by Claude. The pond settles into a new shape.
+That's Koipond. One stone, thrown by you. Ripples carried by Claude. The pond settles into a new shape.
 
 ---
 
 ## The Architecture
 
-Koi is built around four core concepts, each demonstrating Ruby patterns:
+Koipond is built around four core concepts, each demonstrating Ruby patterns:
 
 | Concept        | What It Is                            | Ruby Features                           |
 | -------------- | ------------------------------------- | --------------------------------------- |
@@ -40,16 +40,16 @@ Koi is built around four core concepts, each demonstrating Ruby patterns:
 
 ---
 
-## A Tour of Ruby, Through Koi
+## A Tour of Ruby, Through Koipond
 
-Every feature of Koi exists to showcase something about Ruby. Here is the tour.
+Every feature of Koipond exists to showcase something about Ruby. Here is the tour.
 
 ### 1. Refinements — Polite Metamorphosis
 
 Most languages lock their core types. Ruby opens them — and Refinements let you open them _politely_, scoped to wherever you say `using`:
 
 ```ruby
-module Koi::StringSwims
+module Koipond::StringSwims
   refine String do
     def ripple!(style: :gentle)
       to_stone.throw!(style: style)
@@ -58,7 +58,7 @@ module Koi::StringSwims
 end
 
 # Later, in your code:
-using Koi::StringSwims
+using Koipond::StringSwims
 "app/models/user.rb".ripple!
 ```
 
@@ -97,7 +97,7 @@ This is Ruby's philosophy of generosity. You do the minimum. Ruby multiplies it.
 When you call a method that doesn't exist, Ruby doesn't just crash. It asks the object: _"Do you want to handle this?"_
 
 ```ruby
-pond = Koi.pond
+pond = Koipond.pond
 pond.user_model          # finds user_model.rb
 pond.user_model.kin      # its relatives
 pond.user_model.throw!   # reimagine its world
@@ -125,7 +125,7 @@ This is functional programming hidden inside an object-oriented language. Ruby d
 
 ### 7. Blocks — Ruby's Soul
 
-Every method in Koi that accepts a block uses `&block` or `yield`:
+Every method in Koipond that accepts a block uses `&block` or `yield`:
 
 ```ruby
 stone.throw!(style: :gentle) do |wave|
@@ -148,10 +148,10 @@ Nothing executes until you ask for values. It could traverse the entire project 
 ### 9. TracePoint — The Nature Documentary
 
 ```ruby
-Koi.narrate!
+Koipond.narrate!
 ```
 
-TracePoint lets you observe method calls as they happen — live, without modifying any code. Koi uses it to narrate its own execution like a nature documentary:
+TracePoint lets you observe method calls as they happen — live, without modifying any code. Koipond uses it to narrate its own execution like a nature documentary:
 
 ```
   🐟 the pond remembers who moved last
@@ -172,7 +172,7 @@ if __FILE__ == $0
 end
 ```
 
-`koi.rb` is both a library (require it) and a program (run it). Ruby doesn't mind. Ruby never minds.
+`koipond.rb` is both a library (require it) and a program (run it). Ruby doesn't mind. Ruby never minds.
 
 ### 11. Symbol#to_proc — The Tiny Miracle
 
@@ -185,7 +185,7 @@ stones.map(&:to_s)
 ### 12. ObjectSpace — The Hidden Census
 
 ```ruby
-ObjectSpace.each_object(Koi::Stone).count
+ObjectSpace.each_object(Koipond::Stone).count
 ```
 
 Every object that exists in Ruby's heap can be found through ObjectSpace. Every Stone you've ever created is there — alive in memory until the garbage collector decides otherwise.
@@ -196,14 +196,14 @@ Like memories. Present until forgotten. Never on purpose.
 
 ## Prism Integration (v0.2)
 
-When Prism is available (Ruby 3.3+ or the `prism` gem), Koi gains structural understanding:
+When Prism is available (Ruby 3.3+ or the `prism` gem), Koipond gains structural understanding:
 
 - **Shape extraction**: AST-powered analysis of classes, methods, attributes, includes
 - **Semantic diffs**: Instead of "file changed," Claude learns "added `<=>` method, now includes Comparable"
 - **Deep kin discovery**: Find relatives through constant references, superclass relationships, shared includes
 - **Error tolerance**: Parse broken code mid-edit without stopping the ripple
 
-Instead of telling Claude "this file changed," Koi now explains _what_ changed:
+Instead of telling Claude "this file changed," Koipond now explains _what_ changed:
 
 ```
 + Added: public fetch(key, default = nil)
@@ -243,9 +243,9 @@ koi ~/projects/my_app --radical --trace
 ### As a Library
 
 ```ruby
-require 'koi'
+require 'koipond'
 
-pond = Koi.pond('~/projects/my_app')
+pond = Koipond.pond('~/projects/my_app')
 pond                          #=> 🌊 Pond(my_app, 14 stones)
 pond.last_touched             #=> #<Stone user.rb touched=14:32:07>
 pond.user                     #=> #<Stone user.rb touched=14:32:07>  (method_missing magic)
@@ -259,15 +259,15 @@ pond.user.throw!(style: :poignant).preview
 pond.user.throw!(style: :radical).apply!
 
 # Narrate everything
-Koi.narrate!
+Koipond.narrate!
 pond.throw!
 ```
 
 ### Using Refinements
 
 ```ruby
-require 'koi'
-using Koi::StringSwims
+require 'koipond'
+using Koipond::StringSwims
 
 # Now strings can become stones
 "app/models/user.rb".ripple!(style: :gentle)
@@ -295,10 +295,10 @@ ruby examples/sim.rb
 ## Installation
 
 ```bash
-gem install koi
+gem install koipond
 ```
 
-Or just drop `lib/koi.rb` anywhere and `require` it. It's one file. \_why would approve.
+Or just drop `lib/koipond.rb` anywhere and `require` it. It's one file. \_why would approve.
 
 ### Requirements
 
@@ -315,7 +315,7 @@ He gave us Camping (a web framework in 4KB), Shoes (a GUI toolkit for beginners)
 
 Then he disappeared. All his code, gone from the internet. Because maybe the point was never the code. Maybe the point was the feeling you got when you read it.
 
-Koi is a small attempt to chase that feeling.
+Koipond is a small attempt to chase that feeling.
 
 > _"For now, put your code in a safe. Go play outside."_
 >

@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
-  s.name        = 'koi'
+  s.name        = 'koipond'
   s.version     = '0.2.0.prism'
   s.summary     = 'Throw a stone, watch the pond rewrite itself.'
   s.description = <<~DESC
-    Koi finds the most recently changed Ruby file in your project,
+    Koipond finds the most recently changed Ruby file in your project,
     discovers its relatives through requires and references,
     and asks Claude to reimagine the related code.
 
@@ -16,9 +16,9 @@ Gem::Specification.new do |s|
 
   s.authors     = ['A Curious Fish']
   s.license     = 'MIT'
-  s.homepage    = 'https://github.com/koi-pond/koi'
+  s.homepage    = 'https://github.com/koipond/koipond'
 
-  s.files       = ['lib/koi.rb']
+  s.files       = ['lib/koipond.rb']
   s.bindir      = 'bin'
   s.executables = ['koi']
 

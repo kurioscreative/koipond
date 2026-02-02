@@ -3,9 +3,9 @@
 #
 # ═══════════════════════════════════════════════════════════════
 #
-#  sim.rb — A simulated IRB session with Koi
+#  sim.rb — A simulated IRB session with Koipond
 #
-#  This is the experience of playing with Koi.
+#  This is the experience of playing with Koipond.
 #  Every Ruby feature fires live. The only mock is Claude's
 #  response (because we don't have the CLI here).
 #  Everything else — the parsing, the kin discovery,
@@ -15,7 +15,7 @@
 #
 # ═══════════════════════════════════════════════════════════════
 
-require_relative '../lib/koi'
+require_relative '../lib/koipond'
 
 # ── ANSI Colors ────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ $prompt_num = 0
 
 def irb_prompt
   $prompt_num += 1
-  C.bold("irb(koi):#{format('%03d', $prompt_num)}> ")
+  C.bold("irb(koipond):#{format('%03d', $prompt_num)}> ")
 end
 
 def irb_result(s)
@@ -81,10 +81,10 @@ def fish(text)
 end
 
 # ═══════════════════════════════════════════════════════════════
-#  Override Koi's Wave to mock Claude's response
+#  Override Koipond's Wave to mock Claude's response
 # ═══════════════════════════════════════════════════════════════
 
-module Koi
+module Koipond
   class Wave
     # Override propagate! to use mock response
     def propagate!
@@ -178,7 +178,7 @@ module Koi
 
   def self.narrate!
     @trace = TracePoint.new(:call) do |tp|
-      next unless tp.defined_class.to_s.include?('Koi')
+      next unless tp.defined_class.to_s.include?('Koipond')
       tale = TALES[tp.method_id.to_s]
       if tale
         fish(tale)
@@ -204,7 +204,7 @@ garden_path = File.expand_path('garden', __dir__)
 
 puts
 puts C.bold(C.magenta("  ┌─────────────────────────────────────────────────────┐"))
-puts C.bold(C.magenta("  │  🐟 Koi — an IRB session                           │"))
+puts C.bold(C.magenta("  │  🐟 Koipond — an IRB session                       │"))
 puts C.bold(C.magenta("  │                                                     │"))
 puts C.bold(C.magenta("  │  You just edited seed.rb to add VARIETIES.          │"))
 puts C.bold(C.magenta("  │  Let's see what happens when you throw the stone.   │"))
@@ -215,21 +215,21 @@ pause(1.5)
 
 section("Act 1: Enter the Pond")
 
-type("require 'koi'")
+type("require 'koipond'")
 puts irb_result("true")
 pause(0.5)
 
 narrator("First, let's see the pond.")
 
-type("pond = Koi.pond('#{garden_path}')")
-puts irb_result(Koi.pond(garden_path).to_s)
+type("pond = Koipond.pond('#{garden_path}')")
+puts irb_result(Koipond.pond(garden_path).to_s)
 pause(0.8)
 
 narrator("Five stones. Each a .rb file. The pond found them all.")
 narrator("Enumerable gives us the full toolkit. Let's use it.")
 
 type("pond.map(&:to_s)")
-pond = Koi.pond(garden_path)
+pond = Koipond.pond(garden_path)
 puts irb_result(pond.map(&:to_s).inspect)
 pause(0.8)
 
@@ -350,8 +350,8 @@ section("Act 5: Shapes — Seeing the Structure")
 narrator("Now let's look at seed.rb through the AST's eyes.")
 narrator("Not the text — the structure. The shape.")
 
-type("shape = Koi::Parser.parse_shape(stone.essence, path: stone.path.to_s)")
-shape = Koi::Parser.parse_shape(pond.seed.essence, path: pond.seed.path.to_s)
+type("shape = Koipond::Parser.parse_shape(stone.essence, path: stone.path.to_s)")
+shape = Koipond::Parser.parse_shape(pond.seed.essence, path: pond.seed.path.to_s)
 puts irb_result("#<Shape classes=#{shape.classes.size} methods=#{shape.methods.size} attrs=#{shape.attrs.size}>")
 pause(0.5)
 
@@ -403,18 +403,18 @@ RUBY
 
 after_source = pond.seed.essence
 
-type("before_shape = Koi::Parser.parse_shape(old_source)")
-before_shape = Koi::Parser.parse_shape(before_source, path: "seed.rb")
+type("before_shape = Koipond::Parser.parse_shape(old_source)")
+before_shape = Koipond::Parser.parse_shape(before_source, path: "seed.rb")
 puts irb_result("#<Shape methods=#{before_shape.methods.size} attrs=#{before_shape.attrs.size}>")
 pause(0.3)
 
-type("after_shape = Koi::Parser.parse_shape(stone.essence)")
-after_shape = Koi::Parser.parse_shape(after_source, path: "seed.rb")
+type("after_shape = Koipond::Parser.parse_shape(stone.essence)")
+after_shape = Koipond::Parser.parse_shape(after_source, path: "seed.rb")
 puts irb_result("#<Shape methods=#{after_shape.methods.size} attrs=#{after_shape.attrs.size}>")
 pause(0.5)
 
-type("diff = Koi::ShapeDiff.new(before: before_shape, after: after_shape)")
-diff = Koi::ShapeDiff.new(before: before_shape, after: after_shape)
+type("diff = Koipond::ShapeDiff.new(before: before_shape, after: after_shape)")
+diff = Koipond::ShapeDiff.new(before: before_shape, after: after_shape)
 puts irb_result("#<ShapeDiff magnitude=#{diff.magnitude} severity=#{diff.severity.inspect}>")
 pause(0.8)
 
@@ -435,10 +435,10 @@ narrator("But 'here's what changed, structurally, and how much.'")
 section("Act 7: Narration — Watch the Fish")
 
 narrator("TracePoint lets Ruby observe its own method calls.")
-narrator("Koi uses it to narrate what's happening inside.")
+narrator("Koipond uses it to narrate what's happening inside.")
 
-type("Koi.narrate!")
-Koi.narrate!
+type("Koipond.narrate!")
+Koipond.narrate!
 pause(0.3)
 
 type("pond.last_touched.kin.map(&:to_s)")
@@ -446,7 +446,7 @@ result = pond.last_touched.kin.map(&:to_s)
 puts irb_result(result.inspect)
 pause(1.0)
 
-Koi.silence!
+Koipond.silence!
 narrator("Every method call was observed and narrated.")
 narrator("The fish swim visibly. TracePoint is Ruby's X-ray vision.")
 
@@ -459,7 +459,7 @@ narrator("We throw seed.rb into the pond.")
 narrator("Claude catches the ripples.")
 narrator("(Simulated response — but everything else is real.)")
 
-Koi.narrate!
+Koipond.narrate!
 pause(0.5)
 
 type("reflection = pond.seed.throw!(style: :poignant)")
@@ -469,7 +469,7 @@ puts
 puts irb_result(reflection.to_s)
 pause(1.5)
 
-Koi.silence!
+Koipond.silence!
 
 narrator("#{reflection.reach} files reimagined. Let's preview them.")
 
@@ -503,7 +503,7 @@ section("Act 10: The Small Miracles")
 narrator("Let's activate StringSwims — the refinement.")
 narrator("Now any string can become a stone.")
 
-type("using Koi::StringSwims")
+type("using Koipond::StringSwims")
 puts irb_result("main")
 pause(0.5)
 
@@ -538,8 +538,8 @@ section("Act 11: Easter Egg — The Memory Palace")
 narrator("_why always hid things in his code.")
 narrator("Here's what's hiding in Ruby's heap right now:")
 
-type("ObjectSpace.each_object(Koi::Stone).count")
-count = ObjectSpace.each_object(Koi::Stone).count
+type("ObjectSpace.each_object(Koipond::Stone).count")
+count = ObjectSpace.each_object(Koipond::Stone).count
 puts irb_result(count.to_s)
 pause(0.8)
 
@@ -548,8 +548,8 @@ narrator("is still alive in Ruby's heap, until the garbage collector")
 narrator("decides otherwise. Like memories: present until forgotten.")
 narrator("Never on purpose.")
 
-type("Koi::Stone.ancestors")
-puts irb_result(Koi::Stone.ancestors.inspect)
+type("Koipond::Stone.ancestors")
+puts irb_result(Koipond::Stone.ancestors.inspect)
 pause(1.0)
 
 narrator(".ancestors shows the full inheritance chain.")

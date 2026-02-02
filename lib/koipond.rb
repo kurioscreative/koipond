@@ -1,7 +1,7 @@
 # frozen_string_literal: false  # because some strings want to change
 #
 # ╔═══════════════════════════════════════════════════════════╗
-# ║  🐟 Koi — throw a stone, watch the pond rewrite itself  ║
+# ║  🐟 Koipond — throw a stone, watch the pond rewrite itself  ║
 # ╚═══════════════════════════════════════════════════════════╝
 #
 # A file changes. Its neighbors feel it.
@@ -41,7 +41,7 @@ rescue LoadError
   false
 end
 
-module Koi
+module Koipond
   VERSION = "0.2.0.prism"
 
   # ╔═══════════════════════════════════════════════════════╗
@@ -470,7 +470,7 @@ module Koi
       end
 
       # If Prism is available, use structured prompts
-      if defined?(Koi::Parser) && defined?(Koi::PrismPrompts)
+      if defined?(Koipond::Parser) && defined?(Koipond::PrismPrompts)
         diff = compute_shape_diff
         prompt = PrismPrompts.build(stone: stone, kin: kin, diff: diff, style: style)
       else
@@ -498,7 +498,7 @@ module Koi
 
     # ── Compute shape diff for Prism-powered prompts ───
     def compute_shape_diff
-      return nil unless defined?(Koi::Parser)
+      return nil unless defined?(Koipond::Parser)
       # For now, return nil (no "before" shape available)
       # A full implementation would cache shapes and diff against prior version
       nil
@@ -636,7 +636,7 @@ module Koi
   # ║  Ruby has it built in. Because Ruby trusts you       ║
   # ║  with the sharp tools.                               ║
   # ║                                                      ║
-  # ║  Here we use it to narrate what Koi is doing,        ║
+  # ║  Here we use it to narrate what Koipond is doing,    ║
   # ║  like a nature documentary for your code.            ║
   # ╚═══════════════════════════════════════════════════════╝
 
@@ -657,7 +657,7 @@ module Koi
 
     def self.on!
       @trace = TracePoint.new(:call) do |tp|
-        next unless tp.defined_class.to_s.include?('Koi')
+        next unless tp.defined_class.to_s.include?('Koipond')
         tale = TALES[tp.method_id.to_s]
         # Named methods get narrated. Others appear randomly.
         # Randomness is _why's favorite spice.
@@ -685,8 +685,8 @@ module Koi
   # ║  Every object has one. Most people never visit.      ║
   # ║                                                      ║
   # ║  Defining methods here means you call:               ║
-  # ║    Koi.pond          not   Koi.new.pond              ║
-  # ║    Koi.ripple!       not   koi_instance.ripple!      ║
+  # ║    Koipond.pond      not   Koipond.new.pond          ║
+  # ║    Koipond.ripple!   not   koipond_instance.ripple!  ║
   # ║                                                      ║
   # ║  It's Ruby's way of saying:                          ║
   # ║  modules can be both namespaces AND objects.         ║
@@ -715,9 +715,9 @@ module Koi
   # ║                                                      ║
   # ║  _why always hid things in his code.                 ║
   # ║                                                      ║
-  # ║  In IRB, after playing with Koi for a while:         ║
+  # ║  In IRB, after playing with Koipond for a while:     ║
   # ║                                                      ║
-  # ║    ObjectSpace.each_object(Koi::Stone).count         ║
+  # ║    ObjectSpace.each_object(Koipond::Stone).count     ║
   # ║    => 42  (or however many you've touched)           ║
   # ║                                                      ║
   # ║  Every Stone that ever existed still lives in        ║
@@ -726,8 +726,8 @@ module Koi
   # ║  present until forgotten, never on purpose.          ║
   # ║                                                      ║
   # ║  Also try:                                           ║
-  # ║    Koi::Stone.ancestors                              ║
-  # ║    => [Koi::Stone, Comparable, Struct, ...]          ║
+  # ║    Koipond::Stone.ancestors                          ║
+  # ║    => [Koipond::Stone, Comparable, Struct, ...]      ║
   # ║                                                      ║
   # ║  .ancestors shows the full inheritance chain.        ║
   # ║  In Ruby, every object knows where it came from.     ║
@@ -738,7 +738,7 @@ module Koi
   #
   #   PRISM INTEGRATION
   #
-  #   When Prism is available, Koi gains structural understanding.
+  #   When Prism is available, Koipond gains structural understanding.
   #   It sees code not as text but as shapes, relationships, and diffs.
   #
   # ════════════════════════════════════════════════════════════════
@@ -983,7 +983,7 @@ module Koi
 
     # ── Significance ───────────────────────────────────
     # How much did the shape change?
-    # This helps Koi decide how aggressively to ripple.
+    # This helps Koipond decide how aggressively to ripple.
     def magnitude
       counts = [
         methods_added.size * 3,     # new methods are significant
@@ -1535,7 +1535,13 @@ module Koi
 
   def self.cli!(argv = ARGV)
     # Note: StringSwims refinements can't be used here (Module#using not permitted in methods)
-    # The CLI works through the Koi module API directly
+    # The CLI works through the Koipond module API directly
+
+    # ── Early exit for swim mode ─────────────────────────
+    if argv.first == 'swim'
+      root = argv[1] || Dir.pwd
+      return swim!(root)
+    end
 
     # ── Pattern matching on ARGV ─────────────────────────
     style = case argv
@@ -1578,7 +1584,183 @@ module Koi
     end
   end
 
-end  # module Koi
+  # ════════════════════════════════════════════════════════════════
+  #
+  #   swim! — Interactive REPL
+  #
+  #   A _why the lucky stiff flavored REPL where users enter
+  #   the pond world. lowercase prompts. poetic narration.
+  #   fish guide you through the water.
+  #
+  # ════════════════════════════════════════════════════════════════
+
+  def self.swim!(root = Dir.pwd)
+    pond = Pond.new(root)
+
+    # Welcome scene
+    puts <<~WELCOME
+
+    ∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿
+       you are standing at the edge
+       of a small pond. #{pond.count} stones
+       rest beneath the surface.
+    WELCOME
+
+    stone = pond.last_touched
+    if stone
+      ago = time_ago(stone.path.mtime)
+      puts "       the water remembers:"
+      puts "         #{stone.path.basename} touched the shore"
+      puts "         #{ago}."
+    end
+
+    puts "    ∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿\n\n"
+
+    # Show commands
+    show_swim_help
+
+    # REPL loop
+    style = :gentle
+    loop do
+      print "  🐟 "
+      input = $stdin.gets&.chomp&.strip&.downcase
+      break if input.nil?
+
+      case input.split.first
+      when 'throw'
+        handle_throw(pond, style)
+      when 'look'
+        handle_look(pond)
+      when 'kin'
+        handle_kin(pond, input)
+      when 'style'
+        style = handle_style(input)
+      when 'trace'
+        toggle_trace
+      when 'help', '?'
+        show_swim_help
+      when 'leave', 'exit', 'quit', 'q'
+        puts "  🐟 the pond settles. for now.\n\n"
+        break
+      when '', nil
+        next
+      else
+        puts "  🐟 the water doesn't understand."
+        puts "     try: throw, look, kin, leave\n\n"
+      end
+    end
+  end
+
+  # ── Swim helpers ─────────────────────────────────────
+
+  def self.time_ago(time)
+    seconds = (Time.now - time).to_i
+    return "just now" if seconds < 0  # future mtime (clock skew)
+    case seconds
+    when 0..59 then "#{seconds} seconds ago"
+    when 60..3599 then "#{seconds / 60} minutes ago"
+    when 3600..86399 then "#{seconds / 3600} hours ago"
+    else "#{seconds / 86400} days ago"
+    end
+  end
+
+  def self.show_swim_help
+    puts <<~HELP
+    what would you like to do?
+
+    > throw        (watch the ripples)
+    > look         (peer into the water)
+    > kin          (who swims together?)
+    > style        (gentle, radical, poignant)
+    > trace        (toggle narration)
+    > leave        (the pond stays still)
+
+    HELP
+  end
+
+  def self.handle_throw(pond, style)
+    stone = pond.last_touched
+    unless stone
+      puts "  🐟 the pond is empty. no stones to throw.\n\n"
+      return
+    end
+
+    puts "  🪨 throwing #{stone.path.basename}...\n"
+    reflection = stone.throw!(style: style)
+    puts "  #{reflection}\n"
+
+    if reflection.reach > 0
+      reflection.preview
+      print "\n  apply these changes? (y/n) "
+      if $stdin.gets&.chomp&.downcase == 'y'
+        reflection.apply!
+        puts "\n  🐟 the pond settles. changes applied.\n\n"
+      else
+        puts "\n  🐟 the stone skipped. nothing changed.\n\n"
+      end
+    else
+      puts "\n"
+    end
+  end
+
+  def self.handle_look(pond)
+    stone = pond.last_touched
+    puts "\n  #{pond}"
+    if stone
+      puts "  last touched: #{stone.inspect}"
+      puts "  kin: #{stone.kin.map(&:to_s).join(', ').then { |s| s.empty? ? '(solitary)' : s }}"
+    end
+    puts "\n"
+  end
+
+  def self.handle_kin(pond, input)
+    parts = input.split
+    stone = if parts[1]
+      pond.stones.find { |s| s.path.basename('.rb').to_s == parts[1].sub(/\.rb$/, '') }
+    else
+      pond.last_touched
+    end
+
+    unless stone
+      puts "  🐟 no stone found.\n\n"
+      return
+    end
+
+    puts "\n  #{stone} knows:"
+    kin = stone.kin
+    if kin.empty?
+      puts "    (no one. it swims alone.)"
+    else
+      kin.each { |k| puts "    #{k}" }
+    end
+    puts "\n"
+  end
+
+  def self.handle_style(input)
+    parts = input.split
+    new_style = parts[1]&.to_sym
+
+    if [:gentle, :radical, :poignant].include?(new_style)
+      puts "  🐟 style set to #{new_style}.\n\n"
+      new_style
+    else
+      puts "  🐟 styles: gentle, radical, poignant\n\n"
+      :gentle
+    end
+  end
+
+  def self.toggle_trace
+    if @trace_on
+      Narrate.off!
+      @trace_on = false
+    else
+      Narrate.on!
+      @trace_on = true
+    end
+    puts "\n"
+  end
+
+end  # module Koipond
 
 # ╔═══════════════════════════════════════════════════════════╗
 # ║  The Grand Trick                                         ║
@@ -1593,4 +1775,4 @@ end  # module Koi
 # ║  Ruby doesn't mind. Ruby never minds.                    ║
 # ╚═══════════════════════════════════════════════════════════╝
 
-Koi.cli! if __FILE__ == $0
+Koipond.cli! if __FILE__ == $0

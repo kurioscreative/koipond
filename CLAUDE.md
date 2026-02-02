@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Koi is an experimental Ruby gem that detects the most recently changed `.rb` file in a project, discovers its "kin" (related files), and uses Claude CLI to reimagine the related code. It's a pedagogical exploration of Ruby's intrinsic features, written in the spirit of \_why the lucky stiff.
+Koipond is an experimental Ruby gem that detects the most recently changed `.rb` file in a project, discovers its "kin" (related files), and uses Claude CLI to reimagine the related code. It's a pedagogical exploration of Ruby's intrinsic features, written in the spirit of \_why the lucky stiff.
 
 **This is not a production tool.** It's a toy for exploring Ruby's elegance and Claude's code rewriting capabilities.
 
@@ -22,7 +22,7 @@ Koi is an experimental Ruby gem that detects the most recently changed `.rb` fil
 ### File Structure
 
 ```
-source/files-2/           # Original regex-based Koi
+source/files-2/           # Original regex-based Koi (historical)
   koi.rb                  # The complete gem (~780 lines, both library and CLI)
   koi.gemspec
   garden.rb               # Example project (Seed → Flower → Basket)
@@ -51,10 +51,10 @@ The code intentionally demonstrates these Ruby patterns:
 | Enumerable       | `Pond#each`                               | Define one method, get ~60 methods              |
 | method_missing   | `Pond`                                    | Files become methods: `pond.user_model.kin`     |
 | Lazy Enumerator  | `Stone#deep_kin`                          | Breadth-first graph traversal on demand         |
-| TracePoint       | `Koi.narrate!`                            | Live method-call observation                    |
+| TracePoint       | `Koipond.narrate!`                        | Live method-call observation                    |
 | Pattern matching | CLI ARGV parsing                          | Ruby 3 `case/in` destructuring                  |
 | Lambdas in Hash  | `Wave::STYLES`                            | Strategy pattern in 3 lines                     |
-| `__FILE__ == $0` | Bottom of koi.rb                          | Same file is library and CLI                    |
+| `__FILE__ == $0` | Bottom of koipond.rb                      | Same file is library and CLI                    |
 
 ## Requirements
 
@@ -66,27 +66,25 @@ The code intentionally demonstrates these Ruby patterns:
 ### Run the CLI
 
 ```bash
-ruby source/files-2/koi.rb                    # Gentle ripple from most recent file
-ruby source/files-2/koi.rb --radical          # Radical reimagining
-ruby source/files-2/koi.rb --poignant         # In _why's spirit
-ruby source/files-2/koi.rb --trace            # Watch internal narration
-ruby source/files-2/koi.rb ~/path --radical   # Specify project path
+bin/koi                           # Gentle ripple from most recent file
+bin/koi --radical                 # Radical reimagining
+bin/koi --poignant                # In _why's spirit
+bin/koi --trace                   # Watch internal narration
+bin/koi ~/path --radical          # Specify project path
 ```
 
 ### Run the demos
 
 ```bash
-ruby source/files-3/prism_pond.rb             # Shape/diff demonstration
-ruby source/files-3/prism_features.rb         # Prism vs old AST comparison
-ruby source/files-4/sim.rb                    # Interactive session replay
+ruby examples/prism_features.rb   # Prism vs old AST comparison
+ruby examples/sim.rb              # Interactive session replay
 ```
 
 ### Build the gem
 
 ```bash
-cd source/files-2
-gem build koi.gemspec
-gem install koi-0.1.0.poignant.gem
+gem build koipond.gemspec
+gem install koipond-0.2.0.prism.gem
 ```
 
 ## Style Guidelines
@@ -102,7 +100,7 @@ When modifying, preserve this pedagogical style—the "why" comments are as impo
 
 ## Key Design Decisions
 
-1. **Single-file gem**: `koi.rb` is both library and executable. \_why would approve.
+1. **Single-file gem**: `koipond.rb` is both library and executable. \_why would approve.
 2. **No external dependencies**: Only stdlib (pathname, open3, json, set).
 3. **Fallback support**: Prism code falls back to `RubyVM::AbstractSyntaxTree` on Ruby < 3.3.
 4. **Immutable past**: `.freeze` on "before" states is philosophical, not just technical.
