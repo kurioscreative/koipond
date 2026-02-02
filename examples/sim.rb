@@ -1,5 +1,5 @@
-# encoding: utf-8
 # frozen_string_literal: false
+
 #
 # ═══════════════════════════════════════════════════════════════
 #
@@ -89,24 +89,22 @@ module Koipond
     # Override propagate! to use mock response
     def propagate!
       kin = stone.kin
-      if kin.empty?
-        return Reflection.empty("#{stone} has no kin. It ripples alone.")
-      end
+      return Reflection.empty("#{stone} has no kin. It ripples alone.") if kin.empty?
 
       mock_response = generate_mock_response(kin)
 
       Reflection.new(
-        stone:    stone,
-        kin:      kin,
+        stone: stone,
+        kin: kin,
         response: mock_response,
-        rewrites: parse_rewrites(mock_response),
+        rewrites: parse_rewrites(mock_response)
       )
     end
 
     private
 
     def generate_mock_response(kin)
-      response = ""
+      response = ''
 
       kin.each do |k|
         new_content = k.essence.dup
@@ -160,18 +158,17 @@ module Koipond
   # Override narrate to use our fish helper
   TALES = {
     'last_touched' => 'the pond remembers who moved last',
-    'kin'          => 'searching for family in the water',
-    'deep_kin'     => 'following the current deeper...',
-    'throw!'       => 'a stone arcs through the air',
-    'propagate!'   => 'ripples spreading outward',
-    'apply!'       => 'the future takes shape',
-    'preview'      => 'peering into what might be',
-    'acquaintances'=> 'reading the address book',
-    'mentioned_by' => 'who speaks this name?',
-    'essence'      => "reading the stone's inscription",
-    'resolve'      => 'tracing a path through the pond',
+    'kin' => 'searching for family in the water',
+    'kin_reasons' => 'recalling why they are kin',
+    'deep_kin' => 'following the current deeper...',
+    'throw!' => 'a stone arcs through the air',
+    'propagate!' => 'ripples spreading outward',
+    'apply!' => 'the future takes shape',
+    'preview' => 'peering into what might be',
+    'essence' => "reading the stone's inscription",
+    'resolve' => 'tracing a path through the pond',
     'external_constants' => 'who do I reach for at runtime?',
-    'describe'     => 'the shape speaks',
+    'describe' => 'the shape speaks',
   }.freeze
 
   @trace = nil
@@ -179,6 +176,7 @@ module Koipond
   def self.narrate!
     @trace = TracePoint.new(:call) do |tp|
       next unless tp.defined_class.to_s.include?('Koipond')
+
       tale = TALES[tp.method_id.to_s]
       if tale
         fish(tale)
@@ -203,20 +201,20 @@ end
 garden_path = File.expand_path('garden', __dir__)
 
 puts
-puts C.bold(C.magenta("  ┌─────────────────────────────────────────────────────┐"))
-puts C.bold(C.magenta("  │  🐟 Koipond — an IRB session                       │"))
-puts C.bold(C.magenta("  │                                                     │"))
-puts C.bold(C.magenta("  │  You just edited seed.rb to add VARIETIES.          │"))
+puts C.bold(C.magenta('  ┌─────────────────────────────────────────────────────┐'))
+puts C.bold(C.magenta('  │  🐟 Koipond — an IRB session                       │'))
+puts C.bold(C.magenta('  │                                                     │'))
+puts C.bold(C.magenta('  │  You just edited seed.rb to add VARIETIES.          │'))
 puts C.bold(C.magenta("  │  Let's see what happens when you throw the stone.   │"))
-puts C.bold(C.magenta("  └─────────────────────────────────────────────────────┘"))
+puts C.bold(C.magenta('  └─────────────────────────────────────────────────────┘'))
 pause(1.5)
 
 # ── Act 1: Enter the Pond ─────────────────────────────
 
-section("Act 1: Enter the Pond")
+section('Act 1: Enter the Pond')
 
 type("require 'koipond'")
-puts irb_result("true")
+puts irb_result('true')
 pause(0.5)
 
 narrator("First, let's see the pond.")
@@ -225,10 +223,10 @@ type("pond = Koipond.pond('#{garden_path}')")
 puts irb_result(Koipond.pond(garden_path).to_s)
 pause(0.8)
 
-narrator("Five stones. Each a .rb file. The pond found them all.")
+narrator('Five stones. Each a .rb file. The pond found them all.')
 narrator("Enumerable gives us the full toolkit. Let's use it.")
 
-type("pond.map(&:to_s)")
+type('pond.map(&:to_s)')
 pond = Koipond.pond(garden_path)
 puts irb_result(pond.map(&:to_s).inspect)
 pause(0.8)
@@ -236,149 +234,157 @@ pause(0.8)
 narrator("They're sorted by modification time. Comparable does that.")
 narrator("The freshest wound floats to the top. Let's find it.")
 
-type("pond.last_touched")
+type('pond.last_touched')
 stone = pond.last_touched
 puts irb_result(stone.inspect)
 pause(1.0)
 
-narrator("seed.rb. The file we just changed.")
-narrator("But last_touched is just Enumerable#max.")
-narrator("Because Stone includes Comparable, and Pond includes Enumerable,")
-narrator("this just works. No glue code. No ceremony.")
+narrator('seed.rb. The file we just changed.')
+narrator('But last_touched is just Enumerable#max.')
+narrator('Because Stone includes Comparable, and Pond includes Enumerable,')
+narrator('this just works. No glue code. No ceremony.')
 
 # ── Act 2: method_missing Magic ───────────────────────
 
-section("Act 2: method_missing — The Living Pond")
+section('Act 2: method_missing — The Living Pond')
 
 narrator("Here's where Ruby gets philosophical.")
-narrator("What if you could talk to the pond by name?")
+narrator('What if you could talk to the pond by name?')
 
-type("pond.seed")
+type('pond.seed')
 puts irb_result(pond.seed.inspect)
 pause(0.5)
 
-type("pond.flower")
+type('pond.flower')
 puts irb_result(pond.flower.inspect)
 pause(0.5)
 
-type("pond.basket")
+type('pond.basket')
 puts irb_result(pond.basket.inspect)
 pause(0.5)
 
-type("pond.gardener")
+type('pond.gardener')
 puts irb_result(pond.gardener.inspect)
 pause(0.8)
 
-narrator("There is no `seed` method on Pond.")
-narrator("method_missing intercepts the call,")
-narrator("searches the stones, and returns the match.")
-narrator("The pond feels alive. You talk to it and it answers.")
+narrator('There is no `seed` method on Pond.')
+narrator('method_missing intercepts the call,')
+narrator('searches the stones, and returns the match.')
+narrator('The pond feels alive. You talk to it and it answers.')
 
-type("pond.respond_to?(:seed)")
-puts irb_result("true")
+type('pond.respond_to?(:seed)')
+puts irb_result('true')
 pause(0.3)
 
-type("pond.respond_to?(:unicorn)")
-puts irb_result("false")
+type('pond.respond_to?(:unicorn)')
+puts irb_result('false')
 pause(0.8)
 
-narrator("respond_to_missing? keeps the contract honest.")
-narrator("Introspection works. .method works. Everything works.")
+narrator('respond_to_missing? keeps the contract honest.')
+narrator('Introspection works. .method works. Everything works.')
 
 # ── Act 3: Kin Discovery ──────────────────────────────
 
-section("Act 3: Kin — Who Is Related to seed.rb?")
+section('Act 3: Kin — Who Is Related to seed.rb?')
 
-type("stone = pond.seed")
+type('stone = pond.seed')
 puts irb_result(pond.seed.inspect)
 pause(0.3)
 
-narrator("A stone's kin are found two ways:")
-narrator("1. Files it requires (acquaintances — the address book)")
-narrator("2. Files that mention it (mentioned_by — who speaks your name?)")
+narrator('Prism gives us structural understanding.')
+narrator('It parses the AST to find relationships:')
+narrator('  • Constant references: who uses the classes I define?')
+narrator('  • Inheritance: who inherits from me?')
+narrator('  • Requires: parsed from AST, not regex')
+narrator('  • Shared includes: who shares my modules?')
 
-type("stone.acquaintances.map(&:to_s)")
-puts irb_result(pond.seed.acquaintances.map(&:to_s).inspect)
-pause(0.8)
-
-narrator("seed.rb requires soil.rb. That's one acquaintance.")
-
-type("stone.mentioned_by.map(&:to_s)")
-puts irb_result(pond.seed.mentioned_by.map(&:to_s).inspect)
-pause(0.8)
-
-narrator("flower.rb and gardener.rb both mention 'seed'.")
-narrator("They reference it — whether they know it or not.")
-
-type("stone.kin.map(&:to_s)")
+type('stone.kin.map(&:to_s)')
 puts irb_result(pond.seed.kin.map(&:to_s).inspect)
-pause(1.0)
+pause(0.8)
 
-narrator("Three kin. The union of both directions.")
-narrator("These are the files that should feel the ripple.")
+narrator('Three kin found. But Prism also tells us WHY.')
+
+type('stone.kin_reasons')
+reasons = pond.seed.kin_reasons
+puts irb_result('{')
+reasons.each do |stone, rs|
+  puts irb_result("  #{stone.path.basename} => #{rs.inspect},")
+end
+puts irb_result('}')
+pause(1.2)
+
+narrator('flower.rb requires seed and references the Seed constant.')
+narrator('gardener.rb requires seed and uses Seed in its code.')
+narrator('soil.rb is required by seed.rb.')
+narrator('')
+narrator('This is deeper than string matching.')
+narrator("The AST knows the difference between 'seed' in a comment")
+narrator('and Seed as a constant reference.')
 
 # ── Act 4: Deep Kin — Lazy Enumerators ────────────────
 
-section("Act 4: Deep Kin — The Lazy Current")
+section('Act 4: Deep Kin — The Lazy Current')
 
-narrator("Kin of kin of kin. How deep does the water go?")
-narrator("deep_kin returns a lazy enumerator.")
-narrator("Nothing executes until you pull.")
+narrator('Kin of kin of kin. How deep does the water go?')
+narrator('deep_kin returns a lazy enumerator.')
+narrator('Nothing executes until you pull.')
 
-type("stone.deep_kin(depth: 3)")
-enum = pond.seed.deep_kin(depth: 3)
-puts irb_result("#<Enumerator::Lazy: ...>")
+type('stone.deep_kin(depth: 3)')
+pond.seed.deep_kin(depth: 3)
+puts irb_result('#<Enumerator::Lazy: ...>')
 pause(0.8)
 
-narrator("See? Just a lazy enumerator. No work done yet.")
+narrator('See? Just a lazy enumerator. No work done yet.')
 narrator("Now let's pull values out, one at a time.")
 
-type("stone.deep_kin(depth: 3).first(5).map(&:to_s)")
+type('stone.deep_kin(depth: 3).first(5).map(&:to_s)')
 result = pond.seed.deep_kin(depth: 3).first(5).map(&:to_s)
 puts irb_result(result.inspect)
 pause(1.0)
 
-narrator("It crawled the graph breadth-first.")
-narrator("seed → soil, flower, gardener → basket (via flower).")
-narrator("Lazy means it only did the work we asked for.")
+narrator('It crawled the graph breadth-first.')
+narrator('seed → soil, flower, gardener → basket (via flower).')
+narrator('Lazy means it only did the work we asked for.')
 narrator("If we'd said .first(1), it would have stopped after soil.")
 
 # ── Act 5: Shapes (Prism/AST) ─────────────────────────
 
-section("Act 5: Shapes — Seeing the Structure")
+section('Act 5: Shapes — Seeing the Structure')
 
 narrator("Now let's look at seed.rb through the AST's eyes.")
-narrator("Not the text — the structure. The shape.")
+narrator('Not the text — the structure. The shape.')
 
-type("shape = Koipond::Parser.parse_shape(stone.essence, path: stone.path.to_s)")
+type('shape = Koipond::Parser.parse_shape(stone.essence, path: stone.path.to_s)')
 shape = Koipond::Parser.parse_shape(pond.seed.essence, path: pond.seed.path.to_s)
 puts irb_result("#<Shape classes=#{shape.classes.size} methods=#{shape.methods.size} attrs=#{shape.attrs.size}>")
 pause(0.5)
 
-type("puts shape.describe")
-shape.describe.each_line { |l| irb_puts l.chomp }
+type('puts shape.describe')
+shape.describe.each_line do |l|
+  irb_puts l.chomp
+end
 pause(1.0)
 
-narrator("The AST extracted: 1 class, 5 methods (3 public, 2 private),")
-narrator("3 attributes, 2 external constants (Flower, Soil).")
-narrator("This is what the file LOOKS LIKE FROM THE OUTSIDE.")
+narrator('The AST extracted: 1 class, 5 methods (3 public, 2 private),')
+narrator('3 attributes, 2 external constants (Flower, Soil).')
+narrator('This is what the file LOOKS LIKE FROM THE OUTSIDE.')
 
-type("shape.external_constants")
+type('shape.external_constants')
 puts irb_result(shape.external_constants.inspect)
 pause(0.5)
 
-type("shape.public_interface[:readable]")
+type('shape.public_interface[:readable]')
 puts irb_result(shape.public_interface[:readable].inspect)
 pause(0.8)
 
-narrator("External constants are the types this file reaches for.")
-narrator("These are the REAL dependencies — deeper than require.")
+narrator('External constants are the types this file reaches for.')
+narrator('These are the REAL dependencies — deeper than require.')
 
 # ── Act 6: Diffing Shapes ─────────────────────────────
 
-section("Act 6: The Diff — What Specifically Changed?")
+section('Act 6: The Diff — What Specifically Changed?')
 
-narrator("Imagine this is seed.rb BEFORE your edit:")
+narrator('Imagine this is seed.rb BEFORE your edit:')
 
 before_source = <<~RUBY
   require_relative 'soil'
@@ -403,66 +409,68 @@ RUBY
 
 after_source = pond.seed.essence
 
-type("before_shape = Koipond::Parser.parse_shape(old_source)")
-before_shape = Koipond::Parser.parse_shape(before_source, path: "seed.rb")
+type('before_shape = Koipond::Parser.parse_shape(old_source)')
+before_shape = Koipond::Parser.parse_shape(before_source, path: 'seed.rb')
 puts irb_result("#<Shape methods=#{before_shape.methods.size} attrs=#{before_shape.attrs.size}>")
 pause(0.3)
 
-type("after_shape = Koipond::Parser.parse_shape(stone.essence)")
-after_shape = Koipond::Parser.parse_shape(after_source, path: "seed.rb")
+type('after_shape = Koipond::Parser.parse_shape(stone.essence)')
+after_shape = Koipond::Parser.parse_shape(after_source, path: 'seed.rb')
 puts irb_result("#<Shape methods=#{after_shape.methods.size} attrs=#{after_shape.attrs.size}>")
 pause(0.5)
 
-type("diff = Koipond::ShapeDiff.new(before: before_shape, after: after_shape)")
+type('diff = Koipond::ShapeDiff.new(before: before_shape, after: after_shape)')
 diff = Koipond::ShapeDiff.new(before: before_shape, after: after_shape)
 puts irb_result("#<ShapeDiff magnitude=#{diff.magnitude} severity=#{diff.severity.inspect}>")
 pause(0.8)
 
-type("puts diff.describe")
-diff.describe.each_line { |l| irb_puts l.chomp }
+type('puts diff.describe')
+diff.describe.each_line do |l|
+  irb_puts l.chomp
+end
 pause(1.5)
 
-narrator("The diff sees exactly what you did:")
-narrator("Added :soil attribute. Added viable? and a private expired? method.")
-narrator("Added a VARIETIES constant reference. Soil is now referenced.")
+narrator('The diff sees exactly what you did:')
+narrator('Added :soil attribute. Added viable? and a private expired? method.')
+narrator('Added a VARIETIES constant reference. Soil is now referenced.')
 narrator("Magnitude: #{diff.magnitude}. Severity: #{diff.severity}.")
-narrator("")
+narrator('')
 narrator("This is what Claude will receive. Not 'file changed.'")
 narrator("But 'here's what changed, structurally, and how much.'")
 
 # ── Act 7: TracePoint Narration ───────────────────────
 
-section("Act 7: Narration — Watch the Fish")
+section('Act 7: Narration — Watch the Fish')
 
-narrator("TracePoint lets Ruby observe its own method calls.")
+narrator('TracePoint lets Ruby observe its own method calls.')
 narrator("Koipond uses it to narrate what's happening inside.")
 
-type("Koipond.narrate!")
+type('Koipond.narrate!')
 Koipond.narrate!
 pause(0.3)
 
-type("pond.last_touched.kin.map(&:to_s)")
+type('pond.last_touched.kin.map(&:to_s)')
 result = pond.last_touched.kin.map(&:to_s)
 puts irb_result(result.inspect)
 pause(1.0)
 
 Koipond.silence!
-narrator("Every method call was observed and narrated.")
+narrator('Every method call was observed and narrated.')
 narrator("The fish swim visibly. TracePoint is Ruby's X-ray vision.")
 
 # ── Act 8: Throw the Stone ────────────────────────────
 
-section("Act 8: Throw! — The Main Event")
+section('Act 8: Throw! — The Main Event')
 
-narrator("Everything leads here.")
-narrator("We throw seed.rb into the pond.")
-narrator("Claude catches the ripples.")
-narrator("(Simulated response — but everything else is real.)")
+narrator('Everything leads here.')
+narrator('We throw seed.rb into the pond.')
+narrator('Claude catches the ripples.')
+narrator('(Simulated response — but everything else is real.)')
 
 Koipond.narrate!
 pause(0.5)
 
-type("reflection = pond.seed.throw!(style: :poignant)")
+type('reflection = pond.seed.throw!(style: :poignant)')
 puts
 reflection = pond.seed.throw!(style: :poignant)
 puts
@@ -473,41 +481,41 @@ Koipond.silence!
 
 narrator("#{reflection.reach} files reimagined. Let's preview them.")
 
-type("reflection.preview")
+type('reflection.preview')
 reflection.preview
 pause(2.0)
 
-narrator("The ripples touched flower.rb, gardener.rb, basket.rb, and soil.rb.")
-narrator("Flower gained a :variety attribute and a rare? method.")
-narrator("Gardener now validates varieties before planting.")
-narrator("Basket can group by variety.")
-narrator("Soil learned which varieties it can support.")
-narrator("")
-narrator("One stone. Four ripples. The garden harmonizes.")
+narrator('The ripples touched flower.rb, gardener.rb, basket.rb, and soil.rb.')
+narrator('Flower gained a :variety attribute and a rare? method.')
+narrator('Gardener now validates varieties before planting.')
+narrator('Basket can group by variety.')
+narrator('Soil learned which varieties it can support.')
+narrator('')
+narrator('One stone. Four ripples. The garden harmonizes.')
 
 # ── Act 9: Apply ──────────────────────────────────────
 
-section("Act 9: Apply — The Future Takes Shape")
+section('Act 9: Apply — The Future Takes Shape')
 
-type("reflection.apply!")
+type('reflection.apply!')
 puts
 reflection.apply!
 pause(1.0)
 
-narrator("The files are rewritten. The pond settles.")
+narrator('The files are rewritten. The pond settles.')
 
 # ── Act 10: Refinements & Symbol#to_proc ──────────────
 
-section("Act 10: The Small Miracles")
+section('Act 10: The Small Miracles')
 
 narrator("Let's activate StringSwims — the refinement.")
-narrator("Now any string can become a stone.")
+narrator('Now any string can become a stone.')
 
-type("using Koipond::StringSwims")
-puts irb_result("main")
+type('using Koipond::StringSwims')
+puts irb_result('main')
 pause(0.5)
 
-narrator("With refinements active, you could write:")
+narrator('With refinements active, you could write:')
 puts
 puts "  #{C.cyan('"examples/garden/seed.rb".kin')}"
 puts "  #{C.green('=> [🪨 soil.rb, 🪨 flower.rb, 🪨 gardener.rb]')}"
@@ -517,60 +525,60 @@ puts "  #{C.green('=> 🔮 Reflection: 4 files reimagined')}"
 puts
 pause(1.0)
 
-narrator("A string became a stone. The stone found kin. The kin were rewritten.")
+narrator('A string became a stone. The stone found kin. The kin were rewritten.')
 narrator("Three words. That's refinements.")
 
 puts
-narrator("And Symbol#to_proc — the tiny miracle hiding everywhere:")
+narrator('And Symbol#to_proc — the tiny miracle hiding everywhere:')
 
-type("pond.stones.map(&:to_s)")
+type('pond.stones.map(&:to_s)')
 puts irb_result(pond.stones.map(&:to_s).inspect)
 pause(0.5)
 
-narrator("&:to_s is shorthand for { |x| x.to_s }.")
-narrator("Symbol#to_proc returns a proc that sends that message.")
+narrator('&:to_s is shorthand for { |x| x.to_s }.')
+narrator('Symbol#to_proc returns a proc that sends that message.')
 narrator("You've been using it this whole session.")
 
 # ── Act 11: ObjectSpace Easter Egg ────────────────────
 
-section("Act 11: Easter Egg — The Memory Palace")
+section('Act 11: Easter Egg — The Memory Palace')
 
-narrator("_why always hid things in his code.")
+narrator('_why always hid things in his code.')
 narrator("Here's what's hiding in Ruby's heap right now:")
 
-type("ObjectSpace.each_object(Koipond::Stone).count")
+type('ObjectSpace.each_object(Koipond::Stone).count')
 count = ObjectSpace.each_object(Koipond::Stone).count
 puts irb_result(count.to_s)
 pause(0.8)
 
 narrator("#{count} stones exist in memory. Every stone we ever created")
 narrator("is still alive in Ruby's heap, until the garbage collector")
-narrator("decides otherwise. Like memories: present until forgotten.")
-narrator("Never on purpose.")
+narrator('decides otherwise. Like memories: present until forgotten.')
+narrator('Never on purpose.')
 
-type("Koipond::Stone.ancestors")
+type('Koipond::Stone.ancestors')
 puts irb_result(Koipond::Stone.ancestors.inspect)
 pause(1.0)
 
-narrator(".ancestors shows the full inheritance chain.")
+narrator('.ancestors shows the full inheritance chain.')
 narrator("Stone inherits from Struct, which gives it Enumerable's power.")
-narrator("Comparable gives it sorting. Every method we used")
-narrator("traces back through this chain.")
-narrator("")
-narrator("In Ruby, every object knows where it came from.")
+narrator('Comparable gives it sorting. Every method we used')
+narrator('traces back through this chain.')
+narrator('')
+narrator('In Ruby, every object knows where it came from.')
 
 # ── Act 12: Census with Tally ─────────────────────────
 
-section("Act 12: Census — Tally the Pond")
+section('Act 12: Census — Tally the Pond')
 
-type("pond.census")
+type('pond.census')
 puts irb_result(pond.census.inspect)
 pause(0.5)
 
-narrator(".tally (Ruby 2.7) counts occurrences.")
+narrator('.tally (Ruby 2.7) counts occurrences.')
 narrator("Five .rb files. That's the whole garden.")
 
-type("pond.count")
+type('pond.count')
 puts irb_result(pond.count.to_s)
 pause(0.3)
 
@@ -584,19 +592,19 @@ result = pond.select { |s| s.essence.include?('Enumerable') }.map(&:to_s)
 puts irb_result(result.inspect)
 pause(0.8)
 
-narrator("count, any?, select — all free from Enumerable.")
-narrator("The Pond defined `each`. Ruby did the rest.")
+narrator('count, any?, select — all free from Enumerable.')
+narrator('The Pond defined `each`. Ruby did the rest.')
 
 # ── Finale ─────────────────────────────────────────────
 
-section("Fin")
+section('Fin')
 
 puts C.dim(C.italic("  \"When you don't create things,"))
-puts C.dim(C.italic("   you become defined by your tastes"))
-puts C.dim(C.italic("   rather than ability.\""))
-puts C.dim(C.italic(""))
-puts C.dim(C.italic("                    — _why the lucky stiff"))
+puts C.dim(C.italic('   you become defined by your tastes'))
+puts C.dim(C.italic('   rather than ability."'))
+puts C.dim(C.italic(''))
+puts C.dim(C.italic('                    — _why the lucky stiff'))
 puts
 pause(1.0)
-puts C.dim("  The pond settles. For now.")
+puts C.dim('  The pond settles. For now.')
 puts

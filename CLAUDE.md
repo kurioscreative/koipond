@@ -51,9 +51,10 @@ The code intentionally demonstrates these Ruby patterns:
 | Enumerable       | `Pond#each`                               | Define one method, get ~60 methods              |
 | method_missing   | `Pond`                                    | Files become methods: `pond.user_model.kin`     |
 | Lazy Enumerator  | `Stone#deep_kin`                          | Breadth-first graph traversal on demand         |
-| TracePoint       | `Koipond.narrate!`                        | Live method-call observation                    |
+| TracePoint       | `Koipond.narrate!`                        | Live method-call observation with kin reasons   |
 | Pattern matching | CLI ARGV parsing                          | Ruby 3 `case/in` destructuring                  |
 | Lambdas in Hash  | `Wave::STYLES`                            | Strategy pattern in 3 lines                     |
+| Prism AST        | `DeepKin`, `Parser`, `ShapeVisitor`       | Structural kin discovery via constant refs      |
 | `__FILE__ == $0` | Bottom of koipond.rb                      | Same file is library and CLI                    |
 
 ## Requirements

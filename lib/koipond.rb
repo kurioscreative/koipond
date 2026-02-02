@@ -453,7 +453,7 @@ module Koipond
     STYLES = {
       gentle: lambda { |stone, kin_text|
         <<~PROMPT
-          I just changed #{stone.path.basename}. Here is its current content:
+          #{stone.path.basename} just changed:
 
           ```ruby
           #{stone.essence}
@@ -461,18 +461,19 @@ module Koipond
 
           #{kin_text}
 
-          Gently improve the related files to harmonize with my changes.
-          Keep the spirit. Refine the letter.
-          Preserve method signatures and public interfaces.
-          Return each file as:
+          The ripples reach these files. What do they want to become?
+          Add small features that naturally emerge from the change.
+          A new attribute here invites a new method there.
+          A new capability suggests a new convenience.
+          Gentle evolution, not revolution — but evolution nonetheless.
           === FILEPATH ===
-          (file content)
+          (evolved content)
         PROMPT
       },
 
       radical: lambda { |stone, kin_text|
         <<~PROMPT
-          #{stone.path.basename} has changed. It now reads:
+          #{stone.path.basename} has evolved:
 
           ```ruby
           #{stone.essence}
@@ -480,38 +481,68 @@ module Koipond
 
           #{kin_text}
 
-          Radically reimagine the related files.
-          Make them sing in the same key as the changed file,
-          but find harmonies nobody expected.
-          Rethink the architecture if it serves clarity.
-          Return each file as:
+          The neighbors feel the tremor. Now they transform.
+          Don't just update — reimagine. If this file grew wings,
+          what do the others need to fly alongside it?
+          Add features. Invent capabilities. Let the change cascade.
+          Break what needs breaking. Build what wants to exist.
           === FILEPATH ===
-          (file content)
+          (transformed content)
         PROMPT
       },
 
-      # The poignant style. For when you want Claude
-      # to channel something deeper.
       poignant: lambda { |stone, kin_text|
         <<~PROMPT
-          A file has changed. As _why once said,
-          "when you don't create things, you become defined
-          by your tastes rather than ability."
+          _why wrote: "when you don't create things, you become
+          defined by your tastes rather than ability."
 
-          The changed file (#{stone.path.basename}):
+          #{stone.path.basename} just created something:
+
           ```ruby
           #{stone.essence}
           ```
 
           #{kin_text}
 
-          Rewrite the related files with the curiosity of a fox
-          and the precision of a cartoonist. Make the code more Ruby.
-          More alive. More itself. Favor elegance over cleverness.
-          Favor clarity over brevity. Favor joy over everything.
-          Return each file as:
+          Now the neighbors must create too. Not adapt — create.
+          What new methods want to be born? What playful features
+          emerge when you squint at the change just right?
+          Code like a fox. Invent like a cartoonist.
+          Add the anonymous messaging. Add the easter egg.
+          Add the thing that makes someone smile when they read it.
           === FILEPATH ===
-          (file content)
+          (content that creates)
+        PROMPT
+      },
+
+      # The ruby style. For when the code works but doesn't sing.
+      # No new features — just more Ruby.
+      ruby: lambda { |stone, kin_text|
+        <<~PROMPT
+          #{stone.path.basename} changed:
+
+          ```ruby
+          #{stone.essence}
+          ```
+
+          #{kin_text}
+
+          Make these files more Ruby. Not new features — new fluency.
+
+          Transform:
+          • Loops → Enumerable chains (map, select, reduce, tally)
+          • Conditionals → guard clauses, pattern matching, &.
+          • Verbose methods → endless syntax where it fits
+          • Manual iteration → each_with_object, filter_map
+          • Explicit nil checks → safe navigation, || defaults
+          • Long initialize → Struct or Data.define
+          • Case statements → case/in pattern matching
+          • Callbacks → blocks and yield
+          • Deep nesting → .then pipelines
+
+          The code should read like English. Every line should earn its place.
+          === FILEPATH ===
+          (more Ruby content)
         PROMPT
       },
     }.freeze # .freeze makes the hash immutable.
@@ -572,31 +603,66 @@ module Koipond
     # Multiple return values without tuples or wrappers.
     # Ruby just lets you.
     CLAUDE_SYSTEM_PROMPT = <<~SYSTEM
-      You rewrite Ruby files. Output ONLY in this format:
+      A stone was thrown into the pond. The ripples reach you now.
 
+      You are not a refactoring tool. You are an evolution engine.
+      When a file changes, its neighbors feel the pressure. They don't
+      just "update imports" — they ask: what wants to exist now?
+
+      If User gains `send_message`, maybe Notification grows `anonymous?`.
+      If Seed sprouts `depth`, maybe Garden learns to measure shade.
+      The change is an invitation. The neighbors should RSVP with ideas.
+
+      Be inventive. Add features that emerge naturally from the change.
+      Write code _why would write: whimsical, precise, alive.
+      Use Ruby's soul: blocks, Enumerable, pattern matching, endless methods.
+      Favor code that reads like a poem.
+
+      OUTPUT FORMAT (strict):
       === path/to/file.rb ===
-      (complete file content)
+      (complete evolved file content)
 
-      === another/file.rb ===
-      (complete file content)
+      If truly nothing wants to change: === NO CHANGES ===
 
-      RULES:
-      1. Output ONLY === FILEPATH === blocks
-      2. No prose, no explanations, no markdown, no analysis
-      3. If no changes needed, output exactly: === NO CHANGES ===
-      4. Never explain your reasoning
+      No prose outside === blocks. Let the code speak.
     SYSTEM
 
+    # ── Stream from Claude ─────────────────────────────
+    # Open3.popen3 gives us live pipes instead of waiting.
+    # We read stdout char-by-char so the user sees Claude
+    # thinking in real time — no silent waiting.
+    #
+    # A background thread drains stderr to prevent deadlock
+    # (pipes can block if buffers fill). This is the Ruby way:
+    # threads for IO, not for computation.
     def ask_claude(prompt)
-      stdout, stderr, status = Open3.capture3(
+      output = String.new
+      err_output = String.new
+
+      Open3.popen3(
         'claude', '-p', prompt,
         '--system-prompt', CLAUDE_SYSTEM_PROMPT,
         '--output-format', 'text'
-      )
+      ) do |stdin, stdout, stderr, wait_thr|
+        stdin.close
 
-      raise ClaudeUnreachable, "Claude couldn't hear us: #{stderr}" unless status.success?
+        # Drain stderr in background to prevent pipe deadlock
+        err_thread = Thread.new { err_output = stderr.read }
 
-      stdout
+        # Stream stdout to terminal while collecting for parsing
+        stdout.each_char do |char|
+          print char
+          $stdout.flush # unbuffered output for smooth streaming
+          output << char
+        end
+
+        err_thread.join
+        status = wait_thr.value
+        raise ClaudeUnreachable, "Claude couldn't hear us: #{err_output}" unless status.success?
+      end
+
+      puts # newline after stream completes
+      output
     end
 
     # ── Parse ──────────────────────────────────────────
@@ -1384,80 +1450,105 @@ module Koipond
       case style
       when :gentle
         <<~PROMPT
-          A Ruby file has been modified. Here is a structural analysis of the change:
+          A stone lands. The structure shifts:
 
-          ## What Changed in #{stone.path.basename}
+          ## The Change in #{stone.path.basename}
           #{diff_text}
 
-          ## Current Source
+          ## The New Shape
           ```ruby
           #{stone.essence}
           ```
 
-          ## Related Files That May Need Updates
+          ## The Neighbors Who Felt the Ripple
           #{kin_text}
 
-          Please make minimal, harmonious updates to the related files.
-          Focus on:
-          - New attributes or methods that related files should know about
-          - Changed method signatures that callers need to match
-          - New includes/modules that create new capabilities
-          - Preserving existing comments and documentation
-          Return each file as:
+          These files sense the change. What do they want to become?
+          New attributes invite new methods. New methods invite new features.
+          Don't just update signatures — ask what capabilities want to emerge.
+          Gentle evolution: small features that feel inevitable in hindsight.
           === FILEPATH ===
-          (content)
+          (evolved content)
         PROMPT
 
       when :radical
         <<~PROMPT
-          A Ruby file has evolved. Here's the structural delta:
+          The pond shudders. Something evolved:
 
           ## Mutation Report: #{stone.path.basename}
           #{diff_text}
-          Severity: #{diff&.severity || 'unknown'}
+          Magnitude: #{diff&.severity || 'significant'}
 
-          ## The Evolved Source
+          ## The Evolved Form
           ```ruby
           #{stone.essence}
           ```
 
-          ## The Affected Ecosystem
+          ## The Ecosystem in Flux
           #{kin_text}
 
-          Reimagine the related files. The mutation is #{diff&.severity || 'significant'}.
-          Don't just patch — reconsider. If the architecture wants to move,
-          let it move. Preserve tests and public contracts where possible.
-          Return each file as:
+          This isn't maintenance. This is speciation.
+          The change creates pressure. The neighbors must adapt or perish.
+          Invent features. Add capabilities. If User learned to fly,
+          what do Session, Notification, and Audit need to keep up?
+          Break backward compatibility if evolution demands it.
           === FILEPATH ===
-          (content)
+          (transformed content)
         PROMPT
 
       when :poignant
         <<~PROMPT
-          A file has changed, and its neighbors felt the tremor.
-
-          _why once said: "See, it could just be the way the universe
+          _why wrote: "See, it could just be the way the universe
           works, that a change in one place changes everything."
 
           ## The Tremor
           #{diff_text}
 
-          ## The Source, in its new form
+          ## What Emerged
           ```ruby
           #{stone.essence}
           ```
 
-          ## The Neighbors
+          ## The Neighbors, Waiting
           #{kin_text}
 
-          Rewrite the neighbors so they sing in tune.
-          Be gentle with comments — they are the author's voice.
-          Be bold with structure — the code wants to evolve.
-          Favor Ruby's intrinsic beauty: blocks, enumerables,
-          pattern matching, and names that read like English.
-          Return each file as:
+          Now the neighbors create. Not "handle the breaking change" —
+          create. What playful methods want to exist? What would make
+          a reader smile? Add the easter egg. Add the whimsy.
+          The anonymous message feature. The hidden TracePoint narration.
+          Code like you're leaving a gift for whoever reads it next.
           === FILEPATH ===
-          (content)
+          (content that delights)
+        PROMPT
+
+      when :ruby
+        <<~PROMPT
+          ## What Changed
+          #{diff_text}
+
+          ## The Changed File
+          ```ruby
+          #{stone.essence}
+          ```
+
+          ## Files to Make More Ruby
+          #{kin_text}
+
+          No new features. Just more Ruby.
+
+          Transform these files using Ruby's intrinsic power:
+          • Loops → Enumerable (map, select, reduce, tally, filter_map)
+          • Conditionals → guard clauses, pattern matching, safe navigation
+          • Verbose methods → endless syntax: `def name = expression`
+          • Manual nil checks → &. and || defaults
+          • Boilerplate classes → Struct or Data.define
+          • Case statements → case/in with destructuring
+          • Nested logic → .then pipelines
+          • Explicit blocks → Symbol#to_proc where natural
+
+          The code should read like English prose.
+          === FILEPATH ===
+          (idiomatic Ruby)
         PROMPT
       end
     end
@@ -1596,6 +1687,7 @@ module Koipond
       style = case rest
               in [*, '--radical',  *] then :radical
               in [*, '--poignant', *] then :poignant
+              in [*, '--ruby', *]     then :ruby
               else :gentle
               end
       # Parse --interval=N or --interval N
@@ -1617,6 +1709,7 @@ module Koipond
     style = case argv
             in [*, '--radical',  *] then :radical
             in [*, '--poignant', *] then :poignant
+            in [*, '--ruby', *]     then :ruby
             else :gentle
             end
 
@@ -1742,7 +1835,7 @@ module Koipond
       > throw        (watch the ripples)
       > look         (peer into the water)
       > kin          (who swims together?)
-      > style        (gentle, radical, poignant)
+      > style        (gentle, radical, poignant, ruby)
       > trace        (toggle narration)
       > leave        (the pond stays still)
 
@@ -1811,11 +1904,11 @@ module Koipond
     parts = input.split
     new_style = parts[1]&.to_sym
 
-    if %i[gentle radical poignant].include?(new_style)
+    if %i[gentle radical poignant ruby].include?(new_style)
       puts "  🐟 style set to #{new_style}.\n\n"
       new_style
     else
-      puts "  🐟 styles: gentle, radical, poignant\n\n"
+      puts "  🐟 styles: gentle, radical, poignant, ruby\n\n"
       :gentle
     end
   end
