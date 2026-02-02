@@ -185,6 +185,196 @@ section {
   margin: var(--space-md) auto 0;
 }
 
+/* ── The Stone — Interactive Element ───────────────────────────── */
+.stone-trigger {
+  display: inline-block;
+  position: relative;
+  color: var(--shiro-white);
+  font-style: normal;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.1em 0.4em;
+  margin: 0 0.1em;
+  background: linear-gradient(
+    135deg,
+    var(--wet-stone) 0%,
+    #4a5558 50%,
+    var(--wet-stone) 100%
+  );
+  border-radius: 40% 60% 55% 45% / 50% 45% 55% 50%;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+.stone-trigger::before {
+  content: "🪨";
+  position: absolute;
+  left: -1.5em;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9em;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s ease;
+}
+
+.stone-trigger:hover,
+.stone-trigger:focus {
+  transform: translateY(-3px) rotate(-2deg);
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  color: var(--kohaku-orange);
+  outline: none;
+}
+
+.stone-trigger:hover::before,
+.stone-trigger:focus::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(-3px);
+}
+
+.stone-trigger:active {
+  transform: translateY(0) rotate(0deg);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
+
+/* Stone throw animation - triggered by class */
+.stone-trigger.thrown {
+  animation: throw-stone 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes throw-stone {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(-20px) rotate(-15deg) scale(1.1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(10px) rotate(5deg) scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(30px) rotate(0deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Ripple burst when stone is thrown */
+.ripple-container.burst .ripple {
+  animation: ripple-burst 2s ease-out forwards;
+}
+
+@keyframes ripple-burst {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  100% {
+    width: 1000px;
+    height: 1000px;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Stagger the burst ripples */
+.ripple-container.burst .ripple:nth-child(1) {
+  animation-delay: 0s;
+}
+.ripple-container.burst .ripple:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ripple-container.burst .ripple:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.ripple-container.burst .ripple:nth-child(4) {
+  animation-delay: 0.45s;
+}
+.ripple-container.burst .ripple:nth-child(5) {
+  animation-delay: 0.6s;
+}
+
+/* Tagline parts for staggered reveal */
+.tagline-watch {
+  display: inline-block;
+  opacity: 0.7;
+  transition:
+    opacity 0.5s ease,
+    color 0.5s ease;
+}
+
+.hero.rippling .tagline-watch {
+  opacity: 1;
+  color: var(--shiro-white);
+}
+
+/* Splash droplets when stone enters */
+.stone-trigger.thrown::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--reflected-sky);
+  border-radius: 50%;
+  animation: splash-drops 0.6s ease-out 0.5s forwards;
+  opacity: 0;
+  box-shadow:
+    -8px -12px 0 var(--reflected-sky),
+    8px -10px 0 var(--reflected-sky),
+    -4px -18px 0 var(--reflected-sky),
+    12px -14px 0 var(--reflected-sky),
+    -12px -8px 0 var(--reflected-sky);
+}
+
+@keyframes splash-drops {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 0.8;
+    transform: translateX(-50%) translateY(-15px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-30px) scale(0.3);
+  }
+}
+
+/* Subtle pulse hint that stone is interactive */
+@keyframes stone-hint {
+  0%,
+  100% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.1),
+      0 0 0 3px rgba(224, 127, 79, 0.15);
+  }
+}
+
+.stone-trigger {
+  animation: stone-hint 3s ease-in-out 2s 3;
+}
+
 .hero-subtitle {
   font-size: 0.95rem;
   color: var(--reflected-sky);
@@ -594,11 +784,307 @@ footer cite {
   right: 10%;
 }
 
+/* ── Easter Egg: Ripple Word Wave ─────────────────────────────── */
+.ripple-word {
+  display: inline-block;
+}
+
+.ripple-word.waving {
+  animation: word-wave 0.6s ease-in-out;
+}
+
+@keyframes word-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+}
+
+/* ── Easter Egg: Surfacing Koi ────────────────────────────────── */
+.koi-surface {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  left: calc(50% + 60px);
+  top: 55%;
+  transform: translateY(20px);
+}
+
+.koi-surface.surfacing {
+  animation: koi-rise 2s ease-out forwards;
+}
+
+@keyframes koi-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) rotate(-10deg);
+  }
+  30% {
+    opacity: 0.8;
+    transform: translateY(-10px) rotate(5deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-15px) rotate(0deg);
+  }
+  70% {
+    opacity: 0.8;
+    transform: translateY(-10px) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(30px) rotate(10deg);
+  }
+}
+
+/* ── Easter Egg: Hidden Quote ─────────────────────────────────── */
+.hidden-quote {
+  display: none;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--reflected-sky);
+  opacity: 0;
+  margin-top: var(--space-sm);
+  transition: opacity 1s ease;
+}
+
+.hidden-quote.visible {
+  display: block;
+  opacity: 0.6;
+}
+
+/* ── Easter Egg: Reset Link ───────────────────────────────────── */
+.reset-link {
+  display: none;
+  font-size: 0.8rem;
+  color: var(--reflected-sky);
+  opacity: 0.5;
+  margin-top: var(--space-md);
+  transition: opacity var(--transition-fast);
+}
+
+.reset-link.visible {
+  display: inline-block;
+}
+
+.reset-link:hover {
+  opacity: 1;
+  color: var(--kohaku-orange);
+}
+
+/* ── Morphing Text — Crossfade for Narrative Mode ─────────────── */
+.morphing-text {
+  position: relative;
+  display: inline;
+}
+
+.text-before,
+.text-after {
+  transition: opacity 0.8s ease;
+}
+
+.text-after {
+  position: absolute;
+  left: 0;
+  opacity: 0;
+}
+
+/* When in narrative mode, crossfade the text */
+.narrative-mode .text-before {
+  opacity: 0;
+}
+
+.narrative-mode .text-after {
+  opacity: 1;
+  position: relative;
+}
+
+/* Subtitle morphing text needs block display */
+.hero-subtitle.morphing-text .text-after {
+  display: block;
+}
+
+.narrative-mode .hero-subtitle.morphing-text .text-before {
+  position: absolute;
+}
+
+/* ── Easter Egg: Narrative Mode (Throw 5+) ────────────────────── */
+/* Ripples persist longer, slower and more meditative */
+.narrative-mode .ripple {
+  animation-duration: 10s;
+}
+
+/* Floating koi more visible */
+.narrative-mode .koi {
+  opacity: 0.25;
+  transition: opacity 0.8s ease;
+}
+
+/* Stone button gets activated glow */
+.narrative-mode .stone-trigger {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 0 12px rgba(224, 127, 79, 0.3);
+}
+
+/* ── Easter Egg: Poignant Mode (Throw 10) ─────────────────────── */
+.poignant-mode {
+  --pond-depths: #2a1f1a;
+  --moonlit-water: #3d2f28;
+  --reflected-sky: #8c6a5a;
+  --kohaku-orange: #e8a060;
+}
+
+.poignant-mode h2::before {
+  content: "🐟 ";
+}
+
+.poignant-mode::after {
+  content: "🦊";
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-size: 2rem;
+  opacity: 0.7;
+  animation: fox-peek 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes fox-peek {
+  0%,
+  100% {
+    transform: translateY(10px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+}
+
+/* ── Layer 1: Water Level Rise ────────────────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: linear-gradient(to top, rgba(26, 47, 56, 0.4), transparent);
+  pointer-events: none;
+  z-index: -3;
+  transition: height 1s ease;
+}
+
+.narrative-mode::before {
+  height: 15vh;
+}
+
+.poignant-mode::before {
+  height: 25vh;
+}
+
+/* ── Layer 2: Organic Shoreline ───────────────────────────────── */
+.shoreline {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: var(--lily-pad);
+  opacity: 0;
+  pointer-events: none;
+  z-index: -2;
+  clip-path: polygon(
+    0% 100%,
+    5% 70%,
+    12% 85%,
+    20% 60%,
+    30% 80%,
+    40% 55%,
+    50% 75%,
+    60% 50%,
+    70% 70%,
+    80% 45%,
+    88% 65%,
+    95% 50%,
+    100% 100%
+  );
+  transition:
+    opacity 0.8s ease,
+    height 0.8s ease;
+}
+
+.narrative-mode .shoreline {
+  opacity: 0.1;
+}
+
+.poignant-mode .shoreline {
+  opacity: 0.18;
+  height: 60px;
+}
+
+/* ── Layer 3: Tide Marks ──────────────────────────────────────── */
+.tide-marks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.tide-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--size, 300px);
+  height: var(--size, 300px);
+  border: 1px solid var(--reflected-sky);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: tide-lifecycle 30s ease forwards;
+}
+
+@keyframes tide-lifecycle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  3% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* ── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .hero-emoji,
   .ripple,
-  .koi {
+  .koi,
+  .stone-trigger,
+  .ripple-word.waving,
+  .koi-surface.surfacing,
+  .poignant-mode::after,
+  .tide-mark {
     animation: none;
   }
 
@@ -606,8 +1092,43 @@ footer cite {
     display: none;
   }
 
+  .stone-trigger {
+    cursor: default;
+  }
+
+  .stone-trigger:hover,
+  .stone-trigger:focus {
+    transform: none;
+  }
+
   html {
     scroll-behavior: auto;
+  }
+
+  /* Still show static easter egg elements */
+  .hidden-quote.visible {
+    opacity: 0.6;
+  }
+
+  /* Instant swap for morphing text (no animation) */
+  .text-before,
+  .text-after {
+    transition: none;
+  }
+
+  .koi {
+    transition: none;
+  }
+
+  /* Instant opacity for evolving layers */
+  .shoreline,
+  body::before {
+    transition: none;
+  }
+
+  /* Static tide marks */
+  .tide-mark {
+    opacity: 0.15;
   }
 }
 

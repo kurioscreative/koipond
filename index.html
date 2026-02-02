@@ -29,17 +29,43 @@
     <div class="lily-pad"></div>
   </div>
 
+  <!-- Organic shoreline (bottom edge) -->
+  <div class="shoreline" aria-hidden="true"></div>
+
   <!-- Hero -->
   <header class="hero">
+    <!-- Ripples emanate from the stone -->
     <div class="ripple-container" aria-hidden="true">
+      <div class="ripple"></div>
+      <div class="ripple"></div>
       <div class="ripple"></div>
       <div class="ripple"></div>
       <div class="ripple"></div>
     </div>
 
+    <!-- Tide marks (persistent ripple echoes) -->
+    <div class="tide-marks" aria-hidden="true"></div>
+
+
     <h1 class="hero-title"><span class="hero-emoji">🐟</span> Koipond</h1>
-    <p class="hero-tagline">Throw a stone into your pond of code. Watch the ripples rewrite the shore.</p>
-    <p class="hero-subtitle">A Ruby gem that reimagines your codebase, one change at a time.</p>
+
+    <!-- Interactive tagline with the stone as trigger -->
+    <p class="hero-tagline">
+      <span class="morphing-text"><span class="text-before">Throw a </span><span class="text-after" aria-hidden="true">You threw a </span></span><span class="stone-trigger" tabindex="0" role="button" aria-label="Click to throw the stone">stone</span><span class="tagline-rest"> into your pond of code.</span>
+      <br>
+      <span class="morphing-text tagline-line2"><span class="text-before">Watch the <span class="ripple-word">ripples</span> rewrite the shore.</span><span class="text-after" aria-hidden="true">The ripples are rewriting the shore.</span></span>
+    </p>
+
+    <p class="hero-subtitle morphing-text">
+      <span class="text-before">A Ruby gem that reimagines your codebase, one change at a time.</span>
+      <span class="text-after" aria-hidden="true">The pond remembers.</span>
+    </p>
+
+    <!-- Hidden quote - appears after throw 3 -->
+    <p class="hidden-quote" aria-hidden="true">"the program itself is a poem" — _why</p>
+
+    <!-- Surfacing koi - appears on throw 3 -->
+    <div class="koi-surface" aria-hidden="true">🐟</div>
   </header>
 
   <main id="main" class="container">
@@ -47,7 +73,7 @@
     <!-- The Idea -->
     <section>
       <h2>The Idea</h2>
-      <p>You change a file. Its neighbors should know. They should adapt, harmonize, evolve. But they just sit there — frozen in their last known state, drifting slowly out of tune.</p>
+      <p><span class="morphing-text idea-opener"><span class="text-before">You change a file.</span><span class="text-after" aria-hidden="true">You changed a file.</span></span> Its neighbors should know. They should adapt, harmonize, evolve. But they just sit there — frozen in their last known state, drifting slowly out of tune.</p>
       <p>What if one command could ripple your change outward?</p>
 
       <div class="terminal">
@@ -238,7 +264,175 @@ pond.user_model.throw!   # reimagine its world</code></pre>
         <span>→</span>
       </a>
     </div>
+
+    <!-- Reset link - appears after throw 5 -->
+    <a href="#" class="reset-link" aria-label="Reset pond to initial state">↺ reset pond</a>
   </footer>
 
+  <!-- Stone throwing with progressive easter eggs -->
+  <script>
+    (function() {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const stone = document.querySelector('.stone-trigger');
+      const rippleContainer = document.querySelector('.ripple-container');
+      const hero = document.querySelector('.hero');
+      const body = document.body;
+      const rippleWord = document.querySelector('.ripple-word');
+      const hiddenQuote = document.querySelector('.hidden-quote');
+      const koiSurface = document.querySelector('.koi-surface');
+      const resetLink = document.querySelector('.reset-link');
+      const whyTribute = document.querySelector('.why-tribute blockquote');
+      const tideMarks = document.querySelector('.tide-marks');
+
+      // Restore throw count from localStorage
+      let throwCount = parseInt(localStorage.getItem('koipond-thrown') || '0', 10);
+
+      // Console styling
+      const logStyle = 'color: #4a7c8c; font-style: italic;';
+      const log = (msg) => console.log('%c' + msg, logStyle);
+
+      // Update aria-hidden attributes for morphing text
+      const updateAriaHidden = (narrativeActive) => {
+        document.querySelectorAll('.morphing-text').forEach(container => {
+          const before = container.querySelector('.text-before');
+          const after = container.querySelector('.text-after');
+          if (before && after) {
+            before.setAttribute('aria-hidden', narrativeActive ? 'true' : 'false');
+            after.setAttribute('aria-hidden', narrativeActive ? 'false' : 'true');
+          }
+        });
+      };
+
+      // Add a tide mark ring that fades over time
+      const addTideMark = (throwNum) => {
+        if (!tideMarks) return;
+        const mark = document.createElement('div');
+        mark.className = 'tide-mark';
+        mark.style.setProperty('--size', `${200 + throwNum * 40}px`);
+        tideMarks.appendChild(mark);
+
+        // Remove from DOM when fade animation completes
+        mark.addEventListener('animationend', () => mark.remove());
+      };
+
+      // Apply persisted states on load
+      const applyState = () => {
+        if (throwCount >= 5) {
+          body.classList.add('narrative-mode');
+          resetLink.classList.add('visible');
+          updateAriaHidden(true);
+        }
+        if (throwCount >= 10) {
+          body.classList.add('poignant-mode');
+        }
+        if (throwCount >= 3) {
+          hiddenQuote.classList.add('visible');
+        }
+
+        // Restore tide marks based on throw count
+        for (let i = 3; i <= Math.min(throwCount, 10); i++) {
+          addTideMark(i);
+        }
+      };
+
+      // Reset pond to initial state
+      const resetPond = (e) => {
+        e.preventDefault();
+        throwCount = 0;
+        localStorage.removeItem('koipond-thrown');
+        body.classList.remove('narrative-mode', 'poignant-mode');
+        hiddenQuote.classList.remove('visible');
+        resetLink.classList.remove('visible');
+        updateAriaHidden(false);
+
+        // Clear evolving layers
+        if (tideMarks) tideMarks.innerHTML = '';
+
+        log('🐟 the pond forgets');
+      };
+
+      if (resetLink) {
+        resetLink.addEventListener('click', resetPond);
+      }
+
+      // Apply initial state
+      applyState();
+
+      if (reducedMotion || !stone || !rippleContainer || !hero) return;
+
+      const throwStone = () => {
+        throwCount++;
+        localStorage.setItem('koipond-thrown', throwCount.toString());
+
+        // Base animation
+        stone.classList.add('thrown');
+        rippleContainer.classList.add('burst');
+        hero.classList.add('rippling');
+
+        // Wave the "ripples" word
+        if (rippleWord) {
+          rippleWord.classList.add('waving');
+          setTimeout(() => rippleWord.classList.remove('waving'), 1500);
+        }
+
+        // Throw 1: Console poetry
+        if (throwCount === 1) {
+          log('🐟 the stone sinks slowly');
+          setTimeout(() => log('🐟 ripples spread outward'), 500);
+          setTimeout(() => log('🐟 something stirs in the depths'), 1000);
+        }
+
+        // Throw 3+: Evolving layers (tide marks)
+        if (throwCount >= 3) {
+          addTideMark(throwCount);
+        }
+
+        // Throw 3: Koi surfaces + hidden quote
+        if (throwCount === 3) {
+          if (koiSurface) {
+            koiSurface.classList.add('surfacing');
+            setTimeout(() => koiSurface.classList.remove('surfacing'), 2000);
+          }
+          if (hiddenQuote) {
+            hiddenQuote.classList.add('visible');
+          }
+        }
+
+        // Throw 5: Narrative shift
+        if (throwCount === 5) {
+          body.classList.add('narrative-mode');
+          if (resetLink) resetLink.classList.add('visible');
+          updateAriaHidden(true);
+          log('🐟 the pond remembers you now');
+          log('🐟');
+          log('🐟 "when you don\'t create things, you become');
+          log('🐟  defined by your tastes rather than ability."');
+          log('🐟                                    — _why');
+        }
+
+        // Throw 10: Poignant mode
+        if (throwCount === 10) {
+          body.classList.add('poignant-mode');
+          if (whyTribute) {
+            whyTribute.innerHTML = '"For now, put on some cartoons. You can program later."';
+          }
+        }
+
+        // Reset throw animation
+        setTimeout(() => {
+          stone.classList.remove('thrown');
+          rippleContainer.classList.remove('burst');
+        }, 2500);
+      };
+
+      stone.addEventListener('click', throwStone);
+      stone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          throwStone();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
