@@ -1,0 +1,651 @@
+/* ═══════════════════════════════════════════════════════════════
+   Koipond — A GitHub Pages site in the spirit of _why
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Custom Properties ─────────────────────────────────────────── */
+:root {
+  /* Colors — from the pond */
+  --pond-depths: #1a2f38;
+  --moonlit-water: #2d4a54;
+  --reflected-sky: #4a7c8c;
+  --kohaku-orange: #e07f4f;
+  --tancho-red: #c04c38;
+  --shiro-white: #f5f0e8;
+  --lily-pad: #5a7d5a;
+  --wet-stone: #3a4548;
+
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 6rem;
+
+  /* Typography */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Source Serif 4", Georgia, serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--shiro-white);
+  background-color: var(--pond-depths);
+  overflow-x: hidden;
+}
+
+/* ── Skip Link ─────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--kohaku-orange);
+  color: var(--pond-depths);
+  text-decoration: none;
+  font-weight: 600;
+  z-index: 1000;
+  border-radius: 0 0 4px 4px;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ── Typography ────────────────────────────────────────────────── */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0 0 var(--space-sm) 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+p {
+  margin: 0 0 var(--space-sm) 0;
+}
+
+a {
+  color: var(--kohaku-orange);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover,
+a:focus {
+  color: var(--tancho-red);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--kohaku-orange);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--wet-stone);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.container {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+section {
+  padding: var(--space-lg) 0;
+}
+
+/* ── Box-Drawing Frame ─────────────────────────────────────────── */
+.box-frame {
+  border: 2px solid var(--reflected-sky);
+  border-radius: 4px;
+  padding: var(--space-md);
+  position: relative;
+  background: var(--moonlit-water);
+}
+
+.box-frame::before {
+  content: "╔═══════════════════════════════════════════════════════════╗";
+  position: absolute;
+  top: -1.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--reflected-sky);
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+.hero {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: var(--space-xl) var(--space-md);
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  margin-bottom: var(--space-xs);
+}
+
+.hero-emoji {
+  display: inline-block;
+  animation: swim 4s ease-in-out infinite;
+}
+
+.hero-tagline {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-style: italic;
+  color: var(--reflected-sky);
+  max-width: 32rem;
+  margin: var(--space-md) auto 0;
+}
+
+.hero-subtitle {
+  font-size: 0.95rem;
+  color: var(--reflected-sky);
+  opacity: 0.8;
+  margin-top: var(--space-sm);
+}
+
+/* ── Ripple Animation ──────────────────────────────────────────── */
+.ripple-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--reflected-sky);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: ripple 6s ease-out infinite;
+}
+
+.ripple:nth-child(2) {
+  animation-delay: 2s;
+}
+.ripple:nth-child(3) {
+  animation-delay: 4s;
+}
+
+@keyframes ripple {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 0.4;
+  }
+  100% {
+    width: 800px;
+    height: 800px;
+    opacity: 0;
+  }
+}
+
+@keyframes swim {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(3px) rotate(2deg);
+  }
+  75% {
+    transform: translateX(-3px) rotate(-2deg);
+  }
+}
+
+/* ── Terminal Demo ─────────────────────────────────────────────── */
+.terminal {
+  background: var(--wet-stone);
+  border-radius: 8px;
+  padding: var(--space-md);
+  margin: var(--space-md) 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow-x: auto;
+}
+
+.terminal-header {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--moonlit-water);
+}
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-dot--red {
+  background: #ff5f56;
+}
+.terminal-dot--yellow {
+  background: #ffbd2e;
+}
+.terminal-dot--green {
+  background: #27ca40;
+}
+
+.terminal pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal .prompt {
+  color: var(--lily-pad);
+}
+.terminal .output {
+  color: var(--shiro-white);
+  opacity: 0.9;
+}
+.terminal .emoji {
+}
+
+/* ── Architecture Diagram ──────────────────────────────────────── */
+.architecture {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+.arch-item {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--moonlit-water);
+  border-radius: 8px;
+  border: 1px solid var(--reflected-sky);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.arch-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--kohaku-orange);
+}
+
+.arch-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+.arch-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.arch-desc {
+  font-size: 0.85rem;
+  color: var(--reflected-sky);
+}
+
+.arch-ruby {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--lily-pad);
+  margin-top: var(--space-xs);
+}
+
+/* ── Ruby Tour (Accordion) ─────────────────────────────────────── */
+.ruby-tour {
+  margin: var(--space-md) 0;
+}
+
+.ruby-tour details {
+  margin-bottom: var(--space-sm);
+  background: var(--moonlit-water);
+  border-radius: 8px;
+  border: 1px solid var(--wet-stone);
+  overflow: hidden;
+}
+
+.ruby-tour summary {
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  transition: background var(--transition-fast);
+}
+
+.ruby-tour summary::-webkit-details-marker {
+  display: none;
+}
+
+.ruby-tour summary::before {
+  content: "▸";
+  transition: transform var(--transition-fast);
+  color: var(--kohaku-orange);
+}
+
+.ruby-tour details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.ruby-tour summary:hover {
+  background: var(--wet-stone);
+}
+
+.ruby-tour summary:focus-visible {
+  outline: 2px solid var(--kohaku-orange);
+  outline-offset: -2px;
+}
+
+.ruby-tour .tour-content {
+  padding: 0 var(--space-md) var(--space-md);
+  font-size: 0.95rem;
+}
+
+.ruby-tour .tour-content p {
+  color: var(--shiro-white);
+  opacity: 0.9;
+}
+
+/* ── Code Blocks ───────────────────────────────────────────────── */
+pre {
+  background: var(--wet-stone);
+  padding: var(--space-sm);
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: var(--space-sm) 0;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* ── Why Tribute ───────────────────────────────────────────────── */
+.why-tribute {
+  background: var(--moonlit-water);
+  border-left: 3px solid var(--kohaku-orange);
+  padding: var(--space-md);
+  margin: var(--space-md) 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.why-tribute blockquote {
+  margin: 0;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+.why-tribute cite {
+  display: block;
+  margin-top: var(--space-sm);
+  font-size: 0.9rem;
+  color: var(--reflected-sky);
+}
+
+/* ── Get Started ───────────────────────────────────────────────── */
+.get-started {
+  background: var(--moonlit-water);
+  padding: var(--space-lg);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.get-started h2 {
+  margin-bottom: var(--space-md);
+}
+
+.get-started .install-command {
+  display: inline-block;
+  background: var(--wet-stone);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  margin: var(--space-sm) 0;
+}
+
+.get-started .aside {
+  font-size: 0.9rem;
+  color: var(--reflected-sky);
+  font-style: italic;
+  margin-top: var(--space-md);
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+footer {
+  padding: var(--space-lg) 0;
+  text-align: center;
+  border-top: 1px solid var(--wet-stone);
+}
+
+footer blockquote {
+  font-style: italic;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--reflected-sky);
+}
+
+footer cite {
+  font-size: 0.9rem;
+}
+
+.footer-links {
+  margin-top: var(--space-md);
+}
+
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* ── Floating Koi ──────────────────────────────────────────────── */
+.koi-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.koi {
+  position: absolute;
+  font-size: 1.5rem;
+  opacity: 0.15;
+  animation: drift 60s linear infinite;
+}
+
+.koi:nth-child(1) {
+  top: 20%;
+  animation-delay: 0s;
+  animation-duration: 45s;
+}
+
+.koi:nth-child(2) {
+  top: 60%;
+  animation-delay: -20s;
+  animation-duration: 55s;
+}
+
+@keyframes drift {
+  0% {
+    left: -5%;
+    transform: scaleX(1);
+  }
+  49.9% {
+    transform: scaleX(1);
+  }
+  50% {
+    left: 105%;
+    transform: scaleX(-1);
+  }
+  99.9% {
+    transform: scaleX(-1);
+  }
+  100% {
+    left: -5%;
+    transform: scaleX(1);
+  }
+}
+
+/* ── Lily Pad Blobs ────────────────────────────────────────────── */
+.lily-pads {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.lily-pad {
+  position: absolute;
+  background: var(--lily-pad);
+  opacity: 0.03;
+  border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%;
+}
+
+.lily-pad:nth-child(1) {
+  width: 300px;
+  height: 250px;
+  top: 10%;
+  right: -50px;
+}
+
+.lily-pad:nth-child(2) {
+  width: 200px;
+  height: 180px;
+  bottom: 20%;
+  left: -30px;
+}
+
+.lily-pad:nth-child(3) {
+  width: 150px;
+  height: 130px;
+  top: 50%;
+  right: 10%;
+}
+
+/* ── Reduced Motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-emoji,
+  .ripple,
+  .koi {
+    animation: none;
+  }
+
+  .ripple {
+    display: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+
+  section {
+    padding: var(--space-md) 0;
+  }
+
+  .hero {
+    min-height: 70vh;
+    padding: var(--space-lg) var(--space-sm);
+  }
+
+  .architecture {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .terminal {
+    font-size: 0.8rem;
+    padding: var(--space-sm);
+  }
+
+  .get-started {
+    padding: var(--space-md);
+  }
+
+  .box-frame::before {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .architecture {
+    grid-template-columns: 1fr;
+  }
+}

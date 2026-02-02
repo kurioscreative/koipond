@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koipond — throw a stone, watch the pond rewrite itself</title>
+  <meta name="description" content="A Ruby gem that finds your most recently changed file and asks Claude to reimagine its neighbors. Built from Ruby's intrinsic qualities, in the spirit of _why.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <!-- Floating koi -->
+  <div class="koi-container" aria-hidden="true">
+    <div class="koi">🐟</div>
+    <div class="koi">🐟</div>
+  </div>
+
+  <!-- Lily pad blobs -->
+  <div class="lily-pads" aria-hidden="true">
+    <div class="lily-pad"></div>
+    <div class="lily-pad"></div>
+    <div class="lily-pad"></div>
+  </div>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="ripple-container" aria-hidden="true">
+      <div class="ripple"></div>
+      <div class="ripple"></div>
+      <div class="ripple"></div>
+    </div>
+
+    <h1 class="hero-title"><span class="hero-emoji">🐟</span> Koipond</h1>
+    <p class="hero-tagline">Throw a stone into your pond of code. Watch the ripples rewrite the shore.</p>
+    <p class="hero-subtitle">A Ruby gem that reimagines your codebase, one change at a time.</p>
+  </header>
+
+  <main id="main" class="container">
+
+    <!-- The Idea -->
+    <section>
+      <h2>The Idea</h2>
+      <p>You change a file. Its neighbors should know. They should adapt, harmonize, evolve. But they just sit there — frozen in their last known state, drifting slowly out of tune.</p>
+      <p>What if one command could ripple your change outward?</p>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot terminal-dot--red"></span>
+          <span class="terminal-dot terminal-dot--yellow"></span>
+          <span class="terminal-dot terminal-dot--green"></span>
+        </div>
+        <pre><span class="prompt">$</span> koi --poignant
+<span class="emoji">🌊</span> <span class="output">Pond(my_project, 14 stones)</span>
+<span class="output">Last touched:</span> <span class="emoji">🪨</span> <span class="output">user.rb touched=14:32:07</span>
+<span class="output">Kin:</span> <span class="emoji">🪨</span> <span class="output">authentication.rb,</span> <span class="emoji">🪨</span> <span class="output">profile.rb</span>
+
+<span class="emoji">🔮</span> <span class="output">Reflection: 2 files reimagined from</span> <span class="emoji">🪨</span> <span class="output">user.rb</span></pre>
+      </div>
+
+      <p>That's Koipond. One stone, thrown by you. Ripples carried by Claude. The pond settles into a new shape.</p>
+    </section>
+
+    <!-- Architecture -->
+    <section>
+      <h2>The Architecture</h2>
+      <p>Koipond is built around four core concepts, each demonstrating Ruby patterns:</p>
+
+      <div class="architecture">
+        <div class="arch-item">
+          <span class="arch-emoji">🪨</span>
+          <div class="arch-name">Stone</div>
+          <div class="arch-desc">A Ruby file that changed</div>
+          <div class="arch-ruby">Struct, Comparable</div>
+        </div>
+        <div class="arch-item">
+          <span class="arch-emoji">🌊</span>
+          <div class="arch-name">Pond</div>
+          <div class="arch-desc">Your project directory</div>
+          <div class="arch-ruby">Enumerable, method_missing</div>
+        </div>
+        <div class="arch-item">
+          <span class="arch-emoji">〰️</span>
+          <div class="arch-name">Wave</div>
+          <div class="arch-desc">The ripple to Claude</div>
+          <div class="arch-ruby">Lambdas as strategies</div>
+        </div>
+        <div class="arch-item">
+          <span class="arch-emoji">🔮</span>
+          <div class="arch-name">Reflection</div>
+          <div class="arch-desc">What comes back</div>
+          <div class="arch-ruby">tap, then, immutable</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- A Tour of Ruby -->
+    <section>
+      <h2>A Tour of Ruby, Through Koipond</h2>
+      <p>Every feature of Koipond exists to showcase something about Ruby. Here is the tour.</p>
+
+      <div class="ruby-tour">
+
+        <details>
+          <summary>Refinements — Polite Metamorphosis</summary>
+          <div class="tour-content">
+            <p>Most languages lock their core types. Ruby opens them — and Refinements let you open them <em>politely</em>, scoped to wherever you say <code>using</code>:</p>
+            <pre><code>module Koipond::StringSwims
+  refine String do
+    def ripple!(style: :gentle)
+      to_stone.throw!(style: style)
+    end
+  end
+end
+
+# Later, in your code:
+using Koipond::StringSwims
+"app/models/user.rb".ripple!</code></pre>
+            <p>The String class gains <code>.ripple!</code> only where you ask for it. Everywhere else, strings are still just strings. It is monkey-patching that learned manners.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Struct — Ceremony-Free Objects</summary>
+          <div class="tour-content">
+            <p>When a full class is too much and a Hash is too little:</p>
+            <pre><code>Stone = Struct.new(:path, :pond, keyword_init: true) do
+  include Comparable
+
+  def <=>(other)
+    path.heartbeat <=> other.path.heartbeat
+  end
+end</code></pre>
+            <p>One line gives you <code>initialize</code>, <code>==</code>, <code>to_a</code>, <code>members</code>, <code>[]</code>, <code>each_pair</code>, and more. Then you open the block and add only what's unique. Ruby believes you shouldn't write the same boilerplate twice.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Comparable — Define One Method, Get Six</summary>
+          <div class="tour-content">
+            <p>Include <code>Comparable</code> and define <code><=></code>. Ruby gives you <code>&lt;</code>, <code>&lt;=</code>, <code>==</code>, <code>&gt;=</code>, <code>&gt;</code>, <code>between?</code>, and <code>clamp</code>. For free. Forever.</p>
+            <p>Stones sort by modification time. The most recently touched file rises to the top. We wrote one method. Ruby wrote the rest.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Enumerable — Define One Method, Get Sixty</summary>
+          <div class="tour-content">
+            <p>The Pond includes <code>Enumerable</code> and defines <code>each</code>. Now the Pond responds to <code>map</code>, <code>select</code>, <code>reduce</code>, <code>sort</code>, <code>min</code>, <code>max</code>, <code>flat_map</code>, <code>group_by</code>, <code>tally</code>, <code>any?</code>, <code>none?</code>, <code>count</code>, <code>take</code>, <code>zip</code>, <code>chunk</code>, <code>each_slice</code>, <code>each_cons</code>... roughly sixty methods, all from one.</p>
+            <p>This is Ruby's philosophy of generosity. You do the minimum. Ruby multiplies it.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>method_missing — The Living Object</summary>
+          <div class="tour-content">
+            <p>When you call a method that doesn't exist, Ruby doesn't just crash. It asks the object: <em>"Do you want to handle this?"</em></p>
+            <pre><code>pond = Koipond.pond
+pond.user_model          # finds user_model.rb
+pond.user_model.kin      # its relatives
+pond.user_model.throw!   # reimagine its world</code></pre>
+            <p>Three words. Reads like English. The Pond intercepts unknown method names, searches its stones, and returns the matching file. The pond <em>feels alive</em>.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>TracePoint — The Nature Documentary</summary>
+          <div class="tour-content">
+            <p>TracePoint lets you observe method calls as they happen — live, without modifying any code. Koipond uses it to narrate its own execution:</p>
+            <pre><code>Koipond.narrate!
+
+  🐟 the pond remembers who moved last
+  🐟 reading the stone's inscription
+  🐟 searching for family in the water
+  🐟 a stone arcs through the air
+  🐟 whispering to Claude across the wire
+  🐟 ripples spreading outward</code></pre>
+            <p>Most languages need AOP frameworks for this. Ruby has it built in.</p>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- In the Spirit Of -->
+    <section>
+      <h2>In the Spirit Of</h2>
+
+      <div class="why-tribute">
+        <blockquote>
+          "when you don't create things, you become defined by your tastes rather than ability."
+        </blockquote>
+        <cite>— _why the lucky stiff</cite>
+      </div>
+
+      <p><strong>_why</strong> taught us that programming is not just engineering. It is expression. It is play. It is writing a letter to your future self, and maybe to a fox or two along the way.</p>
+
+      <p>He gave us Camping (a web framework in 4KB), Shoes (a GUI toolkit for beginners), and Hpricot (an HTML parser that was fast and friendly). He wrote <em>Why's (Poignant) Guide to Ruby</em>, which is the only programming book that has a soundtrack.</p>
+
+      <p>Then he disappeared. All his code, gone from the internet. Because maybe the point was never the code. Maybe the point was the feeling you got when you read it.</p>
+
+      <p>Koipond is a small attempt to chase that feeling.</p>
+    </section>
+
+    <!-- Get Started -->
+    <section>
+      <div class="get-started">
+        <h2>Get Started</h2>
+
+        <div class="install-command">gem install koipond</div>
+
+        <div class="terminal" style="text-align: left; margin-top: var(--space-md);">
+          <pre><span class="prompt">$</span> koi --poignant</pre>
+        </div>
+
+        <p class="aside">Or just drop <code>lib/koipond.rb</code> anywhere. It's one file. _why would approve.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="container">
+    <blockquote>
+      "For now, put your code in a safe. Go play outside."
+      <cite>— _why</cite>
+    </blockquote>
+
+    <div class="footer-links">
+      <a href="https://github.com/ge/koipond">
+        <span>View on GitHub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </footer>
+
+</body>
+</html>
